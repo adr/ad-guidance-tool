@@ -91,8 +91,7 @@ If you have a feature request or found a bug, you can [open an issue](https://gi
 
 Contributions are also welcome. Please submit a [pull request](https://github.com/adr/ad-guidance-tool/pulls) with your changes.
 
-We follow [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/The-Clean-Architecture.html) to organize our codebase. If you're adding a feature, we recommend to:
-
+We follow [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) to organize our codebase. If you're adding a feature, we recommend to:
 1. Start with the use case (interactor) of your feature
 2. Add any necessary core logic in the domain layer
 3. Implement the [Cobra CLI command](https://github.com/spf13/cobra) for input and a *presenter/printer* for output
