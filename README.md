@@ -15,7 +15,7 @@ Precompiled executables for major operating systems are available:
 - macOS (Intel): `adg_mac_intel`
 - macOS (Apple Silicon): `adg_mac_arm`
 
-> For convenience, feel free to rename the downloaded file to adg (or adg.exe on Windows) so you can run it directly from the terminal.
+> For convenience, feel free to remove the suffix (e.g., `_win`) after you have downloaded the file.
 
 ### Building from source
 
@@ -24,10 +24,9 @@ To build ADG yourself, ensure that [Go](https://go.dev/dl/) is installed on your
 ```bash
 git clone https://github.com/adr/ad-guidance-tool.git
 cd ad-guidance-tool
-go build -o adg ./main.go
+go build
 ```
-
-> On Windows, be sure to name the output binary with a `.exe` extension (e.g., `adg.exe`) so the terminal can execute it properly.
+This will generate a binary in your current directory called `adg` (or `adg.exe` on Windows).
 
 ### Running the tool
 
@@ -81,9 +80,135 @@ adg completion powershell
 
 Copy the output into your [PowerShell profile](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-7.5) to enable completions. Follow a similar process for other shells (available: `bash`, `fish`, `powershell`, `zsh`).
 
-### Examples
+## User Guide
 
-In the `models/clean` folder, you can see an example of a model created with ADG. This model contains a set of recurring architectural decisions for using Clean Architecture.
+### Creating a new model
+
+To create a new decision model, use the `init` command:
+
+```bash
+adg init <model-name>
+```
+
+This creates a new directory (in your current working directory, unless an absolute or relative path is provided) containing an `index` file. This index tracks metadata for all decisions in the model and is continuously updated as decisions change.
+
+### Adding a decision
+
+To add a new decision to the model:
+
+```bash
+adg add --model <model-name> --title <decision-title>
+```
+
+This generates a new Markdown file inside the model directory. Each new file includes a metadata block followed by three sections: *Question*, *Options*, *Criteria*.
+
+You can edit these sections manually in a text editor, or using the `edit` command of the tool:
+
+```bash
+adg edit --model <model-name> --id <decision-id | decision-title> [--question "<section-content>"] [--option "<option-name>"] [--criteria "<section-content>"]
+```
+
+> The `--option` flag is repeatable for adding multiple options. Each option is automatically given an anchor tag so it can be referenced.
+
+If you're editing manually, ensure the structure matches the following format:
+```markdown
+---
+adr_id: "0001"
+title: your-title
+status: open
+tags: []
+links: []
+comments: []
+---
+
+## <a name="question"></a> Question
+
+<!-- section content -->
+
+## <a name="options"></a> Options
+
+1. <a name="option-1"></a> Option 1
+2. <a name="option-2"></a> Option 2
+3. <a name="option-3"></a> Option 3
+<!-- and so on -->
+
+## <a name="criteria"></a> Criteria
+
+<!-- section content -->
+```
+
+You may change the displayed section header and/or include additional sections, but the tool expects at least the three sections and their anchor tags mentioned above to function properly.
+
+For example:
+
+```markdown
+---
+adr_id: "0001"
+title: your-title
+status: open
+tags: []
+links: []
+comments: []
+---
+
+## <a name="question"></a> Context and Problem Statement
+<!-- section content -->
+
+## <a name="options"></a> Considered Options
+1. <a name="option-1"></a> This is my first considered option
+2. <a name="option-2"></a> This is my second considered option
+<!-- and so on -->
+
+## <a name="criteria"></a> Decision Drivers
+<!-- section content -->
+
+## Pros and Cons of the Options
+<!-- section content -->
+
+```
+
+### Deciding on an option
+
+To mark a decision as decided:
+
+```bash
+adg decide --model <model-name> --id <decision-id | decision-title> --option <option-number | option-title> [--rationale "your-rationale"] 
+```
+
+This will add a new section **Outcome** pointing out the chosen option and a rationale if provided to the command.
+
+### Config
+
+You can customize ADG's behavior using:
+
+```bash
+adg set-config [flags]
+```
+> Run with `-h` to see available configuration flags.
+
+By default configuration is stored in a file called `.adgconfig.yaml` located in your home directory. You can specify a custom path using the `--config-path` flag.
+
+To reset all configuration values (and use the default configuration path again):
+
+```bash
+adg reset-config
+```
+
+### Example Model
+
+In the `models/clean` directory, you’ll find a sample model containing common architectural decisions based on **Clean Architecture**.
+
+You can use this model as a starting point to get familiar with the tool by copying it:
+
+```bash
+adg copy --model models/clean --target <new-model-name>
+```
+
+For more commands see the help text output:
+```bash
+adg -h            # for a general overview
+adg <command> -h  # for a specific command
+```
 
 ## Contributing
 
@@ -96,6 +221,12 @@ We follow [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/
 2. Add any necessary core logic in the domain layer
 3. Implement the [Cobra CLI command](https://github.com/spf13/cobra) for input and a *presenter/printer* for output
 4. Write unit tests (refer to existing tests for guidance). To simplify mocking, we use [mockery](https://github.com/vektra/mockery), though hand-written mocks are also possible.
+
+## References
+
+ADG was developed as part of two theses at the [Eastern Switzerland University of Applied Sciences](https://www.ost.ch/en/)
+- [Concept Alternatives for the Management of Architectural Decisions in Clean Architectures](https://eprints.ost.ch/id/eprint/1280/)
+- [A Command-Line Tool for Managing Recurring Architectural Decisions: Design, Implementation, and Empirical Evaluation](https://eprints.ost.ch/id/eprint/1287/)
 
 ## License
 
