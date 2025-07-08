@@ -92,7 +92,7 @@ adg init <model-name>
 
 This creates a new directory (in your current working directory, unless an absolute or relative path is provided) containing an `index` file. This index tracks metadata for all decisions in the model and is continuously updated as decisions change.
 
-### Adding a decision
+### Adding and editing a decision
 
 To add a new decision to the model:
 
@@ -196,7 +196,7 @@ adg reset-config
 
 ### Example Model
 
-In the `models/clean` directory, you’ll find a sample model containing common architectural decisions based on **Clean Architecture**.
+In the [models/clean](/models/clean/) directory, you’ll find a sample model containing common architectural decisions based on **Clean Architecture**.
 
 You can use this model as a starting point to get familiar with the tool by copying it:
 
@@ -225,8 +225,8 @@ We follow [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/
 ## References
 
 ADG was developed as part of two theses at the [Eastern Switzerland University of Applied Sciences](https://www.ost.ch/en/)
-- [Concept Alternatives for the Management of Architectural Decisions in Clean Architectures](https://eprints.ost.ch/id/eprint/1280/)
-- [A Command-Line Tool for Managing Recurring Architectural Decisions: Design, Implementation, and Empirical Evaluation](https://eprints.ost.ch/id/eprint/1287/)
+- [Concept Alternatives for the Management of Architectural Decisions in Clean Architectures](https://eprints.ost.ch/id/eprint/1280/1/MSECS-FS24-CleanArchitectureDecisionsConceptsRS.pdf)
+- [A Command-Line Tool for Managing Recurring Architectural Decisions: Design, Implementation, and Empirical Evaluation](https://eprints.ost.ch/id/eprint/1287/1/PA2-Raphael-Schellander.pdf)
 
 ## License
 
