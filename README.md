@@ -101,7 +101,21 @@ To add a new decision to the model:
 adg add --model <model-name> --title <decision-title>
 ```
 
+Or simply provide the title as arguments without quotes:
+
+```bash
+adg add --model <model-name> <decision-title-words...>
+```
+
+For example:
+
+```bash
+adg add --model my-model Favor cloud functions over az logic apps
+```
+
 This generates a new Markdown file inside the model directory. Each new file includes a metadata block followed by three sections: *Question*, *Options*, *Criteria*.
+
+> **Tip:** When using positional arguments, the title is automatically assembled from all arguments after the command and flags. The `--title` flag is still available for backwards compatibility or when you need to add multiple decisions at once.
 
 You can edit these sections manually in a text editor, or using the `edit` command of the tool:
 
