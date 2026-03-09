@@ -53,6 +53,7 @@ Available Commands:
   rebuild      Rebuilds the index file for the given model
   reset-config Reset all configuration (or only template headers with --template)
   revise       Creates a copy of a decision and resets its status to 'open' (if not already)
+  rule         Generate a .rule file template for an ADR
   set-config   Set persistent configuration values
   tag          Categorizes a decision by adding one or more tags to its metadata
   validate     Validate the models decisions by checking if the files match the index file
@@ -176,6 +177,50 @@ adg decide --model <model-name> --id <decision-id | decision-title> --option <op
 ```
 
 This will add a new section **Outcome** pointing out the chosen option and a rationale if provided to the command.
+
+### Generating rule files for ADRs
+
+ADG can generate `.rule` files based on your architectural decisions. These rule files use the ADR-DSL format and can be used to define enforceable architectural rules that can be validated by static analysis tools.
+
+To generate a rule file for an existing decision:
+
+```bash
+adg rule --model <model-name> --id <decision-id>
+```
+
+Or using the decision title:
+
+```bash
+adg rule --model <model-name> --title <decision-title>
+```
+
+By default, the rule file is created in the same directory as the ADR with the same filename but a `.rule` extension (e.g., `AD0001-my-decision.rule`).
+
+You can specify a custom output path:
+
+```bash
+adg rule --model <model-name> --id <decision-id> --output path/to/custom.rule
+```
+
+Or a custom output directory (the filename will be based on the ADR filename):
+
+```bash
+adg rule --model <model-name> --id <decision-id> --output path/to/directory/
+```
+
+The generated rule file contains a template with the ADR ID and title pre-filled:
+
+```dsl
+adr "0001" "my-decision-title"
+
+# add your rules here
+rule "rule_name" {
+  
+  severity error
+}
+```
+
+You can then customize this file to define specific architectural rules based on your decision.
 
 ### Config
 

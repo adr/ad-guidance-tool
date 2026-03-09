@@ -1,8 +1,8 @@
 package model
 
 import (
-	out_mocks "adg/mocks/outputport"
-	svc_mocks "adg/mocks/service"
+	out_mocks "github.com/adr/ad-guidance-tool/mocks/outputport"
+	svc_mocks "github.com/adr/ad-guidance-tool/mocks/service"
 	"errors"
 	"testing"
 

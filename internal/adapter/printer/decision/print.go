@@ -1,8 +1,8 @@
 package decision
 
 import (
-	"adg/internal/domain/config"
-	domain "adg/internal/domain/decision"
+	"github.com/adr/ad-guidance-tool/internal/domain/config"
+	domain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 
 	"fmt"
 	"sort"

@@ -35,3 +35,7 @@ type DecisionRevise interface {
 type DecisionTag interface {
 	Tag(modelPath, id, title string, tags []string) error
 }
+
+type DecisionRule interface {
+	Rule(modelPath, id, title, outputPath string) error
+}

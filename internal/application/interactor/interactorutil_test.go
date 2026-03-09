@@ -1,8 +1,8 @@
 package interactor
 
 import (
-	"adg/internal/domain/decision"
-	svc_mocks "adg/mocks/service"
+	"github.com/adr/ad-guidance-tool/internal/domain/decision"
+	svc_mocks "github.com/adr/ad-guidance-tool/mocks/service"
 	"errors"
 	"testing"
 

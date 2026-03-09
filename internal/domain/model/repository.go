@@ -1,6 +1,6 @@
 package model
 
-import domain "adg/internal/domain/decision"
+import domain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 
 type ModelRepository interface {
 	CreateModel(modelPath string) error

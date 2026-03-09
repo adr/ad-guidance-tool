@@ -1,7 +1,7 @@
 package decision
 
 import (
-	"adg/internal/domain"
+	"github.com/adr/ad-guidance-tool/internal/domain"
 	"errors"
 	"fmt"
 	"path/filepath"

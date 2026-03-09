@@ -1,6 +1,6 @@
 package outputport
 
-import domain "adg/internal/domain/decision"
+import domain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 
 type DecisionAdd interface {
 	Added(successes []*domain.Decision, failures map[string]error)
@@ -36,4 +36,8 @@ type DecisionRevise interface {
 
 type DecisionTag interface {
 	Tagged(decisionID string, tags []string)
+}
+
+type DecisionRule interface {
+	RuleGenerated(decisionID, ruleFilePath string)
 }

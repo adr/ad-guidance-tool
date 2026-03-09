@@ -1,7 +1,7 @@
 package model
 
 import (
-	"adg/internal/application/inputport"
+	"github.com/adr/ad-guidance-tool/internal/application/inputport"
 
 	"github.com/spf13/cobra"
 )

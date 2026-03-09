@@ -1,7 +1,7 @@
 package commands
 
 import (
-	domain "adg/internal/domain/config"
+	domain "github.com/adr/ad-guidance-tool/internal/domain/config"
 	"errors"
 	"fmt"
 	"regexp"

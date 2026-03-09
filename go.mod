@@ -1,4 +1,4 @@
-module adg
+module github.com/adr/ad-guidance-tool
 
 go 1.22.2
 

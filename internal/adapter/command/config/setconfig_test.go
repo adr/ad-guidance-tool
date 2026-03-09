@@ -1,7 +1,7 @@
 package config
 
 import (
-	svc_mocks "adg/mocks/service"
+	svc_mocks "github.com/adr/ad-guidance-tool/mocks/service"
 	"errors"
 	"testing"
 

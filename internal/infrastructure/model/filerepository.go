@@ -1,7 +1,7 @@
 package model
 
 import (
-	domain "adg/internal/domain/decision"
+	domain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 	"fmt"
 	"os"
 	"path/filepath"

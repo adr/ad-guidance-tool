@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	decisiondomain "adg/internal/domain/decision"
-	modeldomain "adg/internal/domain/model"
-	configinfra "adg/internal/infrastructure/config"
-	decisioninfra "adg/internal/infrastructure/decision"
-	modelinfra "adg/internal/infrastructure/model"
+	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
+	modeldomain "github.com/adr/ad-guidance-tool/internal/domain/model"
+	configinfra "github.com/adr/ad-guidance-tool/internal/infrastructure/config"
+	decisioninfra "github.com/adr/ad-guidance-tool/internal/infrastructure/decision"
+	modelinfra "github.com/adr/ad-guidance-tool/internal/infrastructure/model"
 	"log"
 
 	"github.com/spf13/cobra"

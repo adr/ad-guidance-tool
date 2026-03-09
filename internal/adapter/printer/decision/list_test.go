@@ -1,7 +1,7 @@
 package decision
 
 import (
-	"adg/internal/domain/decision"
+	"github.com/adr/ad-guidance-tool/internal/domain/decision"
 	"strings"
 	"testing"
 )

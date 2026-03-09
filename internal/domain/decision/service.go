@@ -1,7 +1,7 @@
 package decision
 
 import (
-	"adg/internal/domain"
+	"github.com/adr/ad-guidance-tool/internal/domain"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -19,6 +19,7 @@ type DecisionService interface {
 	GetDecisionByID(modelPath, id string) (*Decision, error)
 	GetDecisionByTitle(modelPath, title string) (*Decision, error)
 	GetDecisionContent(modelPath, decisionID string) (*DecisionContent, error)
+	GetDecisionFilePath(modelPath, decisionID string) (string, error)
 	Edit(modelPath string, decision *Decision, question *string, options *[]string, criteria *string) error
 	Link(modelPath string, source, target *Decision, forwardTag, reverseTag string) error
 	Tag(modelPath string, decision *Decision, tag string) error
@@ -95,6 +96,10 @@ func (s *DecisionServiceImplementation) GetDecisionByTitle(modelPath, title stri
 
 func (s *DecisionServiceImplementation) GetDecisionContent(modelPath, decisionID string) (*DecisionContent, error) {
 	return s.repo.LoadDecisionContent(modelPath, decisionID)
+}
+
+func (s *DecisionServiceImplementation) GetDecisionFilePath(modelPath, decisionID string) (string, error) {
+	return s.repo.FindDecisionFile(modelPath, decisionID)
 }
 
 func (s *DecisionServiceImplementation) Edit(modelPath string, decision *Decision, question *string, options *[]string, criteria *string) error {

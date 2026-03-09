@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"adg/cmd"
+	"github.com/adr/ad-guidance-tool/cmd"
 )
 
 func main() {

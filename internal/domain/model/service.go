@@ -1,8 +1,8 @@
 package model
 
 import (
-	"adg/internal/domain"
-	decisiondomain "adg/internal/domain/decision"
+	"github.com/adr/ad-guidance-tool/internal/domain"
+	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 	"fmt"
 	"reflect"
 	"sort"

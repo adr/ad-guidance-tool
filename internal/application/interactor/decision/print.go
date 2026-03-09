@@ -1,9 +1,9 @@
 package decision
 
 import (
-	"adg/internal/application/inputport"
-	"adg/internal/application/outputport"
-	domain "adg/internal/domain/decision"
+	"github.com/adr/ad-guidance-tool/internal/application/inputport"
+	"github.com/adr/ad-guidance-tool/internal/application/outputport"
+	domain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 	"fmt"
 )
 

@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	domain "adg/internal/domain/config"
+	domain "github.com/adr/ad-guidance-tool/internal/domain/config"
 
 	"github.com/spf13/cobra"
 )

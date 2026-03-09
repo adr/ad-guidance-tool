@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	cmd "adg/internal/adapter/command/config"
+	cmd "github.com/adr/ad-guidance-tool/internal/adapter/command/config"
 )
 
 func init() {
