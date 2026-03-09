@@ -8,12 +8,10 @@ tags:
     - interface-adapter
     - clean-architecture
 links:
-    precedes: []
     succeeds:
         - "0004"
         - "0009"
         - "0010"
-comments: []
 ---
 
 ## <a name="question"></a> Question

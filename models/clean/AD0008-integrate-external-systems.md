@@ -7,10 +7,6 @@ tags:
     - external-system
     - interfaces
     - clean-architecture
-links:
-    precedes: []
-    succeeds: []
-comments: []
 ---
 
 ## <a name="question"></a> Question

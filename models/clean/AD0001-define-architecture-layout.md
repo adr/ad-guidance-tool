@@ -10,8 +10,6 @@ tags:
 links:
     precedes:
         - "0002"
-    succeeds: []
-comments: []
 ---
 
 ## <a name="question"></a> Question

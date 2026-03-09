@@ -8,10 +8,8 @@ tags:
     - infrastructure
     - clean-architecture
 links:
-    precedes: []
     succeeds:
         - "0004"
-comments: []
 ---
 
 ## <a name="question"></a> Question
