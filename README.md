@@ -17,6 +17,16 @@ Precompiled executables for major operating systems are available:
 
 > For convenience, feel free to remove the suffix (e.g., `_win`) after you have downloaded the file.
 
+### Installing via Go
+
+If you have [Go](https://go.dev/dl/) installed, you can install ADG directly using:
+
+```bash
+go install github.com/adr/ad-guidance-tool@latest
+```
+
+This will download, build, and install the `adg` binary to your `$GOPATH/bin` directory (typically `~/go/bin` on Linux/macOS or `%USERPROFILE%\go\bin` on Windows). Make sure this directory is in your system's PATH.
+
 ### Building from source
 
 To build ADG yourself, ensure that [Go](https://go.dev/dl/) is installed on your system. Then run:
