@@ -3,8 +3,11 @@ package madr
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // SplitFile separates the optional YAML frontmatter (between `---` fences at the
@@ -115,4 +118,56 @@ func ParseBody(body string) (*ParsedBody, error) {
 	}
 
 	return pb, nil
+}
+
+// ParseFrontmatter unmarshals the YAML frontmatter text into a Frontmatter
+// struct. Empty/whitespace text returns a zero-value struct with no error.
+func ParseFrontmatter(text string) (Frontmatter, error) {
+	if strings.TrimSpace(text) == "" {
+		return Frontmatter{}, nil
+	}
+	var fm Frontmatter
+	if err := yaml.Unmarshal([]byte(text), &fm); err != nil {
+		return Frontmatter{}, fmt.Errorf("invalid frontmatter YAML: %w", err)
+	}
+	return fm, nil
+}
+
+var filenameRe = regexp.MustCompile(`^([0-9]{4})-([a-z0-9-]+)\.md$`)
+
+// ParseFilename extracts the 4-digit ID and slug from a MADR-shaped filename.
+// Accepts paths with subdirectories (categories); operates on the basename only.
+func ParseFilename(path string) (id, slug string, err error) {
+	base := filepath.Base(path)
+	m := filenameRe.FindStringSubmatch(base)
+	if m == nil {
+		return "", "", fmt.Errorf("filename %q does not match NNNN-slug.md", base)
+	}
+	return m[1], m[2], nil
+}
+
+var (
+	legacyADFilenameRe = regexp.MustCompile(`^AD\d{4}-.*\.md$`)
+	legacyAnchorRe     = regexp.MustCompile(`<a name="(question|options|criteria|outcome|comments|comment-\d+|option-\d+)"></a>`)
+	legacyStatusRe     = regexp.MustCompile(`(?m)^status:\s*(open|decided)\s*$`)
+	legacyADRIDRe      = regexp.MustCompile(`(?m)^adr_id:\s*`)
+)
+
+// IsLegacyADG returns true if the file appears to use the pre-MADR ADG format.
+// Read-side commands will use this to refuse legacy files and steer users to
+// `adg migrate` (PR 4).
+func IsLegacyADG(path string, content []byte) bool {
+	if legacyADFilenameRe.MatchString(filepath.Base(path)) {
+		return true
+	}
+	if legacyAnchorRe.Match(content) {
+		return true
+	}
+	if legacyStatusRe.Match(content) {
+		return true
+	}
+	if legacyADRIDRe.Match(content) {
+		return true
+	}
+	return false
 }

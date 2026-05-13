@@ -104,3 +104,73 @@ Chosen option: "B", because B is better.
 	assert.Equal(t, "B", parsed.ChosenOption)
 	assert.Equal(t, "B is better", parsed.OutcomeRationale)
 }
+
+func TestParseFrontmatter_Full(t *testing.T) {
+	yml := `status: "accepted"
+date: 2026-05-13
+decision-makers:
+  - "danielle"
+tags:
+  - infrastructure
+links:
+  related-to:
+    - "0004"
+comments:
+  - author: "danielle"
+    date: "2026-05-13 14:22:01"
+    text: "Initial."
+`
+	fm, err := ParseFrontmatter(yml)
+	assert.NoError(t, err)
+	assert.Equal(t, "accepted", fm.Status)
+	assert.Equal(t, []string{"danielle"}, fm.DecisionMakers)
+	assert.Equal(t, []string{"infrastructure"}, fm.Tags)
+	assert.Equal(t, []string{"0004"}, fm.Links["related-to"])
+	assert.Len(t, fm.Comments, 1)
+	assert.Equal(t, "Initial.", fm.Comments[0].Text)
+}
+
+func TestParseFrontmatter_Empty(t *testing.T) {
+	fm, err := ParseFrontmatter("")
+	assert.NoError(t, err)
+	assert.Equal(t, Frontmatter{}, fm)
+}
+
+func TestParseFilename_Valid(t *testing.T) {
+	id, slug, err := ParseFilename("0042-use-kafka.md")
+	assert.NoError(t, err)
+	assert.Equal(t, "0042", id)
+	assert.Equal(t, "use-kafka", slug)
+}
+
+func TestParseFilename_WithSubdirectory(t *testing.T) {
+	id, slug, err := ParseFilename("infra/0042-use-kafka.md")
+	assert.NoError(t, err)
+	assert.Equal(t, "0042", id)
+	assert.Equal(t, "use-kafka", slug)
+}
+
+func TestParseFilename_Invalid(t *testing.T) {
+	_, _, err := ParseFilename("AD0042-use-kafka.md")
+	assert.Error(t, err)
+	_, _, err = ParseFilename("0042.md")
+	assert.Error(t, err)
+}
+
+func TestIsLegacyADG_DetectsFilenamePrefix(t *testing.T) {
+	assert.True(t, IsLegacyADG("AD0001-foo.md", []byte("# T")))
+}
+
+func TestIsLegacyADG_DetectsBodyAnchor(t *testing.T) {
+	assert.True(t, IsLegacyADG("0001-foo.md", []byte(`# T
+## <a name="question"></a> Question
+`)))
+}
+
+func TestIsLegacyADG_DetectsLegacyStatus(t *testing.T) {
+	assert.True(t, IsLegacyADG("0001-foo.md", []byte("---\nstatus: open\n---\n")))
+}
+
+func TestIsLegacyADG_PureMADRPasses(t *testing.T) {
+	assert.False(t, IsLegacyADG("0001-foo.md", []byte("---\nstatus: accepted\n---\n# T\n")))
+}
