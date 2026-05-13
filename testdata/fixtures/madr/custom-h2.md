@@ -1,6 +1,6 @@
 ---
-status: "proposed"
-date: 2026-05-13
+status: proposed
+date: "2026-05-13"
 ---
 
 # Migrate from MySQL to PostgreSQL

@@ -1,26 +1,25 @@
 ---
-status: "accepted"
-date: 2026-05-13
+status: accepted
+date: "2026-05-13"
 decision-makers:
-  - "danielle"
+    - danielle
 consulted:
-  - "rsmith"
-informed: []
+    - rsmith
 tags:
-  - infrastructure
-  - migration
+    - infrastructure
+    - migration
 links:
-  related-to:
-    - "0004"
+    related-to:
+        - "0004"
 supersedes:
-  - "0017"
+    - "0017"
 comments:
-  - author: "danielle"
-    date: "2026-05-13 14:22:01"
-    text: "Initial decision; revisit after Q3."
-  - author: "rsmith"
-    date: "2026-05-14 09:00:00"
-    text: "Confirmed in prod load test."
+    - author: danielle
+      date: "2026-05-13 14:22:01"
+      text: Initial decision; revisit after Q3.
+    - author: rsmith
+      date: "2026-05-14 09:00:00"
+      text: Confirmed in prod load test.
 ---
 
 # Use Kafka for the event bus
