@@ -1,0 +1,574 @@
+# ADG MADR-Native Fork — Design Spec
+
+**Date:** 2026-05-13
+**Status:** Draft for review
+**Scope:** Fork `github.com/adr/ad-guidance-tool` to `github.com/daniellemccool/ad-guidance-tool`. Convert the file format from ADG's HTML-anchor-based layout to MADR 4.0–native markdown. Fold the originally-planned §A (data integrity) and §B (workflow ergonomics) bug fixes into this refactor.
+
+## Goal
+
+Make ADG a MADR 4.0–native CLI that uses the *minimal + Decision Drivers* template by default, retains ADG's useful extensions (tags, custom links, comments) as YAML frontmatter, and ships a clean one-shot migration from today's anchor-based format.
+
+## Principles
+
+1. **Markdown-first.** A decision record renders correctly on any markdown viewer with no tooling. No HTML anchors, no proprietary body syntax.
+2. **Convention over configuration.** Canonical MADR section names are fixed. The current `set-config` flags for section headers are removed.
+3. **Just enough structure.** Required: H1 title, Context and Problem Statement, Considered Options, Decision Outcome. Everything else optional.
+4. **Filename is identity.** `NNNN-slug.md` (no `AD` prefix). No `adr_id` frontmatter.
+5. **History in git.** No in-tool changelog. Comments are the one structured exception — they capture time-stamped commentary that wouldn't naturally land in commit messages.
+
+## Preserve / Drop / Add
+
+**Preserve:** model concept (directory of ADRs), CLI verb surface, Clean Architecture layout, Cobra, mockery, Go build.
+
+**Drop:**
+- All HTML anchors (`<a name="question">`, `<a name="option-N">`, `<a name="comment-N">`).
+- `AD` filename prefix.
+- `set-config` for section headers.
+- `links.precedes` / `links.succeeds` (generic precedes/succeeds not in MADR).
+- Numbered option references (`We decided for [option-1](#option-1)` → `Chosen option: "Title"`).
+- Status values `open` / `decided` (replaced by MADR vocabulary).
+- `decide --force` auto-creating an option.
+
+**Add:**
+- MADR frontmatter fields: `date`, `decision-makers`, `consulted`, `informed`.
+- ADG extensions (preserved): `tags`, `links` (custom only), `comments` (text as source of truth).
+- `adg migrate` command.
+- `adg supersede` command (first-class).
+- `adg edit --from-stdin` / `--from-file` with replace semantics.
+- `adg validate --quiet` flag.
+- Stdout/stderr split across status-only commands.
+
+## File Format & Data Model
+
+### Filename
+
+`NNNN-slug.md`
+- `NNNN`: 4-digit zero-padded sequential ID.
+- `slug`: lowercase title, spaces/punctuation → single dashes.
+- Subdirectories permitted (MADR's "categories via subdirectories" convention).
+
+### Canonical body template (minimal + Decision Drivers)
+
+```markdown
+# {short title, representative of solved problem and found solution}
+
+## Context and Problem Statement
+
+{...}
+
+## Decision Drivers
+
+* {driver 1}
+
+## Considered Options
+
+* {option 1}
+* {option 2}
+
+## Decision Outcome
+
+Chosen option: "{option title}", because {justification}.
+
+### Consequences
+
+* Good, because {...}
+* Bad, because {...}
+```
+
+Sections are matched by H2/H3 header text only (canonical MADR names, case-insensitive). No anchors. The parser is tolerant of section ordering and preserves unknown H2 sections verbatim on round-trip.
+
+### Frontmatter schema
+
+YAML, between `---` fences at the top. All MADR-defined fields are optional. ADG extensions are grouped at the bottom.
+
+```yaml
+---
+# MADR-defined
+status: "accepted"              # proposed | rejected | accepted | deprecated | superseded by ADR-NNNN
+date: 2026-05-13                # YYYY-MM-DD; auto-updated on mutating commands
+decision-makers:
+  - "danielle"
+consulted: []
+informed: []
+
+# ADG extensions
+tags:
+  - infrastructure
+links:                          # custom non-supersession links
+  related-to:
+    - "0004"
+supersedes:                     # ADG ext: forward pointer set by `adg supersede`
+  - "0042"
+comments:                       # source of truth for the rendered ## Comments body section
+  - author: "danielle"
+    date: "2026-05-13 14:22:01"
+    text: "First impression — this might not survive next year."
+legacy-outcome: false           # ADG ext: set by `adg migrate` for ADRs whose outcome doesn't fit MADR shape; validate skips outcome-shape check when true
+---
+```
+
+**Status vocabulary** is MADR-canonical. `superseded by ADR-NNNN` is a literal string. `adg supersede` writes this on the old ADR and writes the inverse pointer in `supersedes` on the new ADR.
+
+**Date** is auto-managed: set on creation, updated on `decide`/`edit`/`comment`/`tag`/`link`/`supersede`. User can manually edit. `--no-touch-date` flag on mutating commands suppresses the update.
+
+**RACI fields** are user-managed. Flags exist on `add`/`decide` to set them; ADG never mutates them automatically.
+
+### `index.yaml` — cache only
+
+In the fork, `index.yaml` becomes a *performance cache* for `adg list`, regenerated by `adg rebuild`. ADR files themselves are always authoritative. Every read goes to disk; the index is consulted only when explicitly listing.
+
+**Open question for implementation phase:** keep `index.yaml` as a cache, or drop it entirely. For models with <100 ADRs (the user's case), full scan is fast. Recommendation: drop it; add a `--cache` opt-in if performance ever becomes a complaint. Ratify before PR 1.
+
+### Comments — architectural fix
+
+Storage: frontmatter `comments: [{author, date, text}, ...]` list. The `Comment.Text` field name replaces the legacy `Comment.Comment` stutter; YAML tag is `text`. Comment `date` is a timestamp with time-of-day (`YYYY-MM-DD HH:MM:SS`) to preserve commentary ordering within a single day; the ADR-level `date` frontmatter field is day-precision (`YYYY-MM-DD`) per MADR.
+
+Rendering: every write to an ADR re-renders a trailing `## Comments` H2 from the frontmatter list:
+
+```markdown
+## Comments
+
+* **2026-05-13 14:22:01 — @danielle:** First impression — this might not survive next year.
+* **2026-05-15 09:12:33 — @rsmith:** Confirmed in prod, see incident #4571.
+```
+
+If `comments` is empty/absent, the section is omitted. **The body section is never parsed; it's purely rendered output.** Editing it by hand has no effect — the next write overwrites it.
+
+This makes the §A.1 bug class structurally impossible: there's no destructive body-rewrite cycle.
+
+### Go struct
+
+```go
+type Decision struct {
+    // Identity (from filename, not stored in frontmatter)
+    ID   string
+    Slug string
+
+    // Title (from H1, not duplicated in frontmatter)
+    Title string
+
+    // MADR frontmatter
+    Status         string
+    Date           string
+    DecisionMakers []string `yaml:"decision-makers"`
+    Consulted      []string
+    Informed       []string
+
+    // ADG extensions
+    Tags           []string
+    Links          map[string][]string
+    Supersedes     []string
+    Comments       []Comment
+    LegacyOutcome  bool `yaml:"legacy-outcome,omitempty"`
+}
+
+type Comment struct {
+    Author string `yaml:"author"`
+    Date   string `yaml:"date"`
+    Text   string `yaml:"text"`
+}
+```
+
+Body content is held as opaque `[]byte` for round-tripping. A thin parser (`internal/domain/decision/bodyparser.go`) extracts:
+
+- Options list (bullets under `## Considered Options`).
+- Decision Outcome's chosen-option string and rationale.
+- Section presence map (for validation).
+- Custom/unknown H2 sections (preserved verbatim).
+
+### Section parsing rules
+
+| Header text (case-insensitive) | Canonical name | Required |
+|---|---|---|
+| Context and Problem Statement | context | yes |
+| Decision Drivers | drivers | no |
+| Considered Options | options | yes |
+| Decision Outcome | outcome | yes |
+| Pros and Cons of the Options | pros-cons | no |
+| More Information | more | no |
+| Comments | comments | ADG-rendered; not parsed |
+
+Any other H2 is preserved as a custom section. On round-trip, known sections sit in canonical MADR order; unknown sections retain their original relative position.
+
+H3 subsections within Decision Outcome (`Consequences`, `Confirmation`) are recognized but treated as opaque body content.
+
+### Round-trip property
+
+```
+∀ ADR file f:
+  parse(f) → re-render → f'
+  diff(f, f') == ∅   (modulo `date` if a mutation occurred)
+```
+
+This is the strongest test invariant. Any failure indicates the parser/renderer pair is lossy.
+
+## Command Semantics
+
+### `adg init <model-name>`
+
+Unchanged in shape. Creates the directory, writes an empty `index.yaml` (if kept), writes a `README.md` stub documenting MADR convention.
+
+### `adg add --title "..."` (repeatable)
+
+Writes `0001-slug.md` (no `AD` prefix) using the minimal + Decision Drivers template. ID is the next 4-digit number from a directory scan. New optional flags:
+
+- `--decision-maker <name>` (repeatable) → frontmatter `decision-makers`
+- `--consulted <name>` (repeatable)
+- `--informed <name>` (repeatable)
+- `--status <s>` (default `proposed`)
+- `--date YYYY-MM-DD` (default today)
+
+Stdout: `0001\n` per created ADR, one per line in `--title` order. Stderr: readable success messages.
+
+### `adg edit --id <id>` — dual mode
+
+**Append-mode (flag form, MADR-renamed):**
+```
+adg edit --id 0001 [--context "..."] [--drivers "..."] [--option "..."] [--more "..."]
+```
+
+Each flag appends to its section. `--option` is repeatable (appends bullets). `--question`/`--criteria` from old ADG are renamed to `--context`/`--drivers`.
+
+**Replace-mode (new):**
+```
+adg edit --id 0001 (--from-stdin | --from-file PATH) [--force]
+```
+
+Input parsed as markdown body. Sections present in input replace those sections in the ADR; absent sections are untouched.
+
+**Section gate** (input touching these is rejected):
+- `## Decision Outcome` → use `adg decide`
+- `## Comments` → use `adg comment`
+
+**Status gate** (both modes):
+
+| Status | Default | With `--force` |
+|---|---|---|
+| `proposed` | allowed | (same) |
+| `accepted` | refuse, point at `adg revise` | allowed, stderr warning |
+| `deprecated`, `superseded by …` | refuse, point at `adg revise` | allowed, stderr warning |
+
+This is a backwards-compat shift: today's flag-based edit silently rewrites decided ADRs. New behavior refuses unless `--force`.
+
+### `adg decide --id <id> --option <option> [--rationale "..."]`
+
+Rewrites `## Decision Outcome` body to exactly:
+```
+Chosen option: "{option text}", because {rationale}.
+```
+(Or omits `because …` if no rationale.)
+
+`--option` matching:
+- **Numeric** (`--option 2`): position in the current `## Considered Options` bullet list at call time. Resolves to bullet text and writes that text.
+- **Text** (`--option "Use Postgres"`): case-insensitive match against bullet text. Errors on ambiguity.
+
+Sets `status: accepted`, touches `date`, clears `legacy-outcome` flag. Already-accepted ADRs require `--force`.
+
+**Removed behavior:** `--force` no longer auto-creates an option. MADR principle: decisions are for previously considered options. If the option isn't in the list, errors and points at `adg edit`.
+
+### `adg comment --id <id> --author <a> --text "..."`
+
+Append-only. Adds `{author, date: now, text}` to frontmatter `comments`. Re-renders `## Comments` body section from the full list. No body parsing.
+
+§A.1 resolved here architecturally.
+
+### `adg supersede --new <new-id> --old <old-id> [--rationale "..."] [--date YYYY-MM-DD]`
+
+New first-class command. Atomic two-file write:
+1. Old ADR: `status: "superseded by ADR-<new-id>"`, date touched.
+2. New ADR: appends `<old-id>` to `supersedes` list, date touched.
+3. If `--rationale`: appends a comment to the **old** ADR (`Superseded by ADR-<new-id>: {rationale}`).
+
+Refuses if old ADR is already superseded (don't silently overwrite supersession chains). `--force` overrides.
+
+### `adg revise --id <id>`
+
+Creates a copy with title `{original} (Revised)`, status `proposed`, fresh date, empty Decision Outcome and Consequences. Tags, decision-makers, etc. copied. Comments NOT copied. Body sections (Context, Drivers, Options) copied verbatim.
+
+Returns new ID on stdout.
+
+**Stays independent of supersession.** User runs `adg supersede --new X --old Y` separately if they want the relationship recorded.
+
+### `adg link --tag <tag> [--reverse-tag <tag>] <source-id> <target-id>`
+
+Frontmatter `links: {<tag>: [<id>, ...]}`. Bidirectional requires `--reverse-tag`.
+
+`precedes`/`succeeds` hardcoded pair dropped — all links are custom-tagged. Cycle-detection logic removed (it was tied to `precedes` specifically).
+
+Refuses `supersedes`/`superseded-by` tag names — points at `adg supersede`.
+
+### `adg tag --id <id> <tag>`
+
+Unchanged. Frontmatter `tags` array. Refuses duplicates.
+
+### `adg list [--tag t] [--status s] [--id range] [--title regex] [--supersedes id] [--format ids]`
+
+Renders from cache or scan. New filters/options:
+
+- `--supersedes <id>`: ADRs whose `supersedes` includes `<id>`.
+- `--status` accepts MADR vocabulary. Wildcards: `--status "superseded by *"` matches any supersession.
+- `--format ids`: one ID per line on stdout, no decoration.
+
+### `adg view --id <id> [--section <name>]`
+
+Renders ADR body to stdout. With `--section <name>`, prints just that section (canonical MADR names; case-insensitive).
+
+**Round-trip integration:** `adg view --id X | adg edit --from-stdin --id X` is a no-op (modulo date touch).
+
+### `adg validate --model <m> [--quiet]`
+
+Per-decision report. Checks:
+
+1. **Filename** matches `^[0-9]{4}-[a-z0-9-]+\.md$`.
+2. **H1** present, non-empty.
+3. **Required H2 sections** present: Context and Problem Statement, Considered Options, Decision Outcome.
+4. **Considered Options** has at least one bullet.
+5. **Decision Outcome** (skipped when `legacy-outcome: true`): if `status == accepted`, must contain `Chosen option:` and the quoted option text must match a bullet in Considered Options.
+6. **Status** is exactly one of: `proposed`/`rejected`/`accepted`/`deprecated`, or matches `^superseded by ADR-[0-9]{4}$`.
+7. **Supersession integrity (forward):** if status is `superseded by ADR-X`, then ADR-X must exist AND have `<self>` in its `supersedes` list.
+8. **Supersession integrity (reverse):** every `supersedes: ["X"]` entry must point to an existing ADR-X whose status is `superseded by ADR-<self>`.
+9. **Frontmatter** parseable YAML; known fields have expected types; unknown fields allowed.
+10. **Comments integrity:** for each frontmatter `comments` entry, `text` is non-empty and not solely numeric (defends against §A.1 regression).
+
+`--quiet`: suppress per-decision OK lines; print failures only. Exit non-zero iff at least one decision fails.
+
+### `adg rebuild --model <m>`
+
+Rescans files, regenerates `index.yaml` from frontmatter. Idempotent.
+
+### `adg import`, `adg merge`, `adg copy`
+
+Semantics preserved; format adapted (no `AD` prefix, no anchor rewriting). ID renumbering on import touches `supersedes` lists and status strings (`superseded by ADR-NNNN` references adjusted to the new IDs in the target model).
+
+### `adg set-config` / `adg reset-config`
+
+Pruned. Removed: all section-header customization options. Kept: genuinely user-preference settings (default model path, default author). Final list determined in implementation plan.
+
+### `adg migrate --model <m>` — see next section
+
+## Migration (`adg migrate`)
+
+Required step on first use of the fork against a pre-existing model.
+
+### CLI surface
+
+```
+adg migrate --model <m> [--dry-run] [--keep-legacy-files] [--drop-comment-pattern <regex>] [--placeholder-template <str>]
+```
+
+- `--dry-run`: print would-be changes per file, no writes.
+- `--keep-legacy-files`: write `0001-slug.md` alongside `AD0001-slug.md` instead of renaming.
+- `--drop-comment-pattern <regex>`: drop comments whose recovered text matches. Repeatable. Practical use: `--drop-comment-pattern '^marked decision as decided$'`.
+- `--placeholder-template <str>`: override default placeholder for unrecoverable comment text. Supports `{author}`/`{date}` substitutions.
+
+**Idempotent.** Running twice produces same output as once. Already-migrated files are skipped silently.
+
+### Per-file conversion steps
+
+For each `AD\d{4}-.*\.md`:
+
+1. Parse legacy file (frontmatter, body with anchors, filename ID).
+2. **Recover comment text** from body anchors via pattern `<a name="comment-N"></a>\s*N\.\s*\(([^)]+)\)\s+([^:]+):\s*(.*)`. Match against `index.yaml` `comments[N-1]` by position. Missing/unparseable anchors → synthesize placeholder `[text lost to legacy comment-rewrite bug; original posted {date} by {author}]`.
+3. Apply `--drop-comment-pattern` regexes to recovered text. Remove matches.
+4. **Rewrite frontmatter:**
+   - Drop `adr_id`.
+   - Drop `links.precedes`, `links.succeeds`.
+   - Migrate `links.custom` → top-level `links: {<tag>: [<id>, ...]}` (excluding supersession tags — see step 6).
+   - Translate `status: open` → `proposed`, `status: decided` → `accepted`.
+   - Add `date: <today>` if absent.
+5. **Rewrite body:**
+   - Strip all HTML anchors.
+   - `## Question` → `## Context and Problem Statement`.
+   - `## Options` numbered list → `## Considered Options` asterisk bullets. Option text preserved verbatim.
+   - `## Criteria` → `## Decision Drivers`.
+   - `## Outcome` → `## Decision Outcome`. Body preserved (per `legacy-outcome` flag).
+   - `## Comments` body section regenerated from frontmatter.
+   - Unknown H2 sections preserved verbatim.
+   - `[option-N](#option-N)` markdown links in outcome rewritten to literal option text.
+6. **Supersession links collapse into status:**
+   - `links.custom.superseded-by: ["NNNN"]` → `status: "superseded by ADR-NNNN"`.
+   - `links.custom.supersedes: ["NNNN"]` → top-level `supersedes: ["NNNN"]`.
+   - If both `status: decided` and `superseded-by` present, supersession status wins.
+7. **Set `legacy-outcome: true`** for any ADR whose post-migration status is `accepted` or `superseded by *`. Validate will skip the `Chosen option:` shape check on these; the flag is removable by the user (manually or via `adg decide --force`).
+8. **Rename file:** `AD0042-slug.md` → `0042-slug.md` via `os.Rename` (git detects the rename at diff time, preserving blame).
+9. Rebuild `index.yaml` at end of migration.
+
+### Detection
+
+File needs migration if any of:
+- Filename matches `^AD\d{4}-.*\.md$`.
+- Body contains `<a name="...">`.
+- Frontmatter `status` is `open` or `decided`.
+- Frontmatter has `adr_id`.
+- Frontmatter `links` has `precedes` or `succeeds`.
+
+If none match, file is MADR-native and skipped.
+
+### Edge cases (called out)
+
+- **Auto-decide comments** (`marked decision as decided`): not filtered by default. User opts in via `--drop-comment-pattern '^marked decision as decided$'`.
+- **Prose Decision Outcomes** (free-form paragraphs without `Chosen option:` shape): preserved verbatim, `legacy-outcome: true` set. Validate skips structural check. User can hand-curate later (remove flag) or `adg decide --force` to regenerate.
+- **Unrecoverable comment text**: replaced with placeholder string. Author and date recovered from index.yaml stub (only text was wrong).
+- **Index/body comment count mismatch**: index is authoritative for the entry list; body anchors are the only text source. Missing anchors → placeholder. Extra anchors → ignored.
+
+### `--dry-run` output
+
+Per-file diff summary on stdout, machine-parseable:
+
+```
+0001-use-postgres-for-primary-store.md
+  rename: AD0001-use-postgres-for-primary-store.md
+  status: decided → accepted
+  comments: 1 entry (1 recovered, 0 placeholder, 0 dropped)
+  body: 4 sections renamed, 6 anchors stripped, 0 option-N refs rewritten
+  legacy-outcome: true
+```
+
+End-of-run summary on stderr: `20 files migrated, 0 errors, 6 files had unrecoverable comments (placeholders inserted).`
+
+### Required user workflow (post-PR-4)
+
+```
+adg migrate --model docs/decisions --dry-run                                 # preview
+adg migrate --model docs/decisions --drop-comment-pattern '^marked .*$'      # actual
+git diff                                                                     # review
+git add . && git commit -m "Migrate ADRs to MADR 4.0 format"
+```
+
+Until this runs, read-side commands refuse with `Error: file <path> appears to use legacy ADG format; run 'adg migrate --model <m>' to convert.`
+
+## Output Split (Stdout/Stderr)
+
+### Convention
+
+- Stdout: machine-parseable values, one per line, in production order.
+- Stderr: readable status messages.
+- Failure: empty stdout, error on stderr, non-zero exit code.
+
+### Surface
+
+| Command | Stdout | Stderr |
+|---|---|---|
+| `add` (single) | `0001\n` | `Decision "<title>" (0001) added.` |
+| `add` (multi `--title`) | `0001\n0002\n…` (in --title order) | one line per success |
+| `revise` | `0050\n` (new ID) | `Decision 0042 revised to 0050.` |
+| `list --format=ids` | IDs one per line | (none) |
+| `list` (default) | readable list | (none) |
+| `view` | rendered body | (none) |
+| `view --section <s>` | section content | (none) |
+| `migrate --dry-run` | per-file summaries | end-of-run summary |
+
+**No machine value (status to stderr):** `init`, `decide`, `comment`, `edit`, `link`, `supersede`, `tag`, `copy`, `import`, `merge`, `rebuild`, `set-config`, `reset-config`, `validate`.
+
+`validate`'s per-decision OK lines move to stderr. `--quiet` suppresses them entirely.
+
+### Implementation
+
+Direct `os.Stderr` / `os.Stdout` references (no DI of writers — CLI is small enough). Presenter test harness extended to capture both streams separately. Per-command assertions on each.
+
+### Backwards-compat callout
+
+Documented in PR-2 description:
+- **Removed:** regex-parsing `(0042)` from `adg add`. Use `id=$(adg add --title …)`.
+- **Removed:** capturing success message from stdout. Use `2>&1` or stderr capture.
+- **Changed:** `adg validate` OK lines now on stderr.
+- **New:** `adg list --format=ids`.
+
+## Test Strategy
+
+### Round-trip property (load-bearing invariant)
+
+```
+∀ ADR file f in fixtures:
+  parse(f) → re-render → f'
+  diff(f, f') == ∅   (modulo date if mutating)
+```
+
+Fixtures:
+- Four upstream MADR 4.0 templates (full/minimal/bare/bare-minimal).
+- The fork's canonical `minimal + Decision Drivers` template.
+- `models/clean` post-MADR-rewrite.
+- Synthetic: custom H2, H3 under Outcome, no frontmatter, all extensions populated, comments rendered, supersession status.
+- User's real-repo 20 ADRs post-migration.
+
+### Per-PR test plan
+
+**PR 1 — MADR file format + repository:**
+- Round-trip over all fixtures.
+- Body parser unit tests (section variants, ordering, case-insensitive, unknown preserved).
+- Frontmatter parser unit tests (MADR-only, ADG extensions, unknown fields).
+- Renderer unit tests (template emission, comments section, supersession status).
+- `models/clean` rewritten in MADR; validates clean; round-trips.
+
+**PR 2 — Command port + stdout/stderr split:**
+- Ported behavior tests per command.
+- New semantic tests: `decide --force` no longer auto-creates option; status vocabulary; `link` refuses supersession tags.
+- Stream-split tests: stdout and stderr captured separately. `add` asserts ID-per-line in `--title` order. `validate --quiet` asserts silent on pass.
+- `adg supersede` integration test: atomic two-direction write; refuses pre-superseded ADR; rationale-as-comment.
+
+**PR 3 — `adg edit --from-stdin/--from-file`:**
+- Parser tests per section variant.
+- Status-gate tests across statuses, with/without `--force`.
+- Section-gate tests: Outcome/Comments in input rejected.
+- Round-trip integration: `adg view --id X | adg edit --from-stdin --id X` is a no-op.
+- Replace semantics: per-section replacement, others untouched.
+- Backwards-compat: append form still works on open ADRs; flag form now status-gated.
+
+**PR 4 — `adg migrate`:**
+- Per-edge-case fixture tests.
+- Idempotence: run twice; second run is no-op.
+- User's 20-ADR fixture: post-migration validate passes; all comments non-empty (or placeholder); supersession bidirectional; no `AD` filenames.
+- `--dry-run`: no writes; stdout diff matches expected.
+- `--drop-comment-pattern`: matching comments dropped.
+- `--keep-legacy-files`: originals survive.
+
+### CI
+
+GitHub Actions: `go test ./...`, integration check `adg validate --model models/clean` exits zero. Round-trip tests in unit phase.
+
+## Rollout
+
+### PR sequencing
+
+1. **`feat: MADR 4.0 native file format + repository`** — new Decision struct, MADR-native filerepository, validator, `index.yaml` as cache (or dropped). All old anchor-based code deleted in this PR. `models/clean` rewritten.
+2. **`feat: port commands to MADR data model + stdout/stderr split`** — every command ported. §B.3 applied uniformly. `set-config` header flags removed.
+3. **`feat: adg edit --from-stdin / --from-file with replace semantics`** — §B.4 with status gating.
+4. **`feat: adg migrate from legacy ADG format`** — one-shot conversion with all edge cases.
+
+### User's migration path (post-PR-4)
+
+```
+cd ~/your-decision-repo
+adg migrate --model docs/decisions --dry-run
+adg migrate --model docs/decisions --drop-comment-pattern '^marked decision as decided$'
+git diff
+git add . && git commit -m "Migrate ADRs to MADR 4.0 format"
+```
+
+### Versioning
+
+Fork starts at `v2.0.0`. Major bump signals file format break.
+
+## Open Questions (to ratify before PR 1)
+
+1. **`index.yaml`** — keep as cache or drop entirely? Recommendation: drop; add as `--cache` opt-in if perf becomes an issue.
+2. **`adg revise` and supersession** — should `revise` auto-set up supersession, or stay independent of `adg supersede`? Recommendation: stay independent. User runs `adg revise` then `adg supersede` separately.
+
+## Out of Scope (Deferred)
+
+From the original §C-§D items in the user's pre-design writeup, these are not in this spec:
+
+- §C.5 `adg supersede` — **folded in** (now in scope).
+- §C.6 `adg validate --quiet` — **folded in**.
+- §C.7 auto-detect model directory / `.adgrc` — deferred. Can be added later as a thin enhancement.
+- §C.8 `adg list --format ids` — **folded in**.
+- §C.9 `adg edit --replace-option N` / `--remove-option N` — deferred. Achievable today via `--from-stdin` replace.
+- §C.10 `adg decide --option <name>` — **folded in** (always supported, both numeric and text).
+- §D.11 Full index-as-source-of-truth migration — **superseded** by the MADR refactor itself, which moves frontmatter to source-of-truth status for everything ADG tracks.
+
+## References
+
+- MADR 4.0 spec: https://adr.github.io/madr/
+- MADR 4.0 templates: https://github.com/adr/madr/tree/4.0.0/template
+- Upstream ADG: https://github.com/adr/ad-guidance-tool
+- Fork: https://github.com/daniellemccool/ad-guidance-tool
