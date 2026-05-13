@@ -530,10 +530,15 @@ GitHub Actions: `go test ./...`, integration check `adg validate --model models/
 
 ### PR sequencing
 
-1. **`feat: MADR 4.0 native file format + repository`** — new Decision struct, MADR-native filerepository, validator, `index.yaml` as cache (or dropped). All old anchor-based code deleted in this PR. `models/clean` rewritten.
-2. **`feat: port commands to MADR data model + stdout/stderr split`** — every command ported. §B.3 applied uniformly. `set-config` header flags removed.
-3. **`feat: adg edit --from-stdin / --from-file with replace semantics`** — §B.4 with status gating.
-4. **`feat: adg migrate from legacy ADG format`** — one-shot conversion with all edge cases.
+Originally framed as four PRs (1-4); PR 1 turned out to be too large to plan or review as a single unit, so it is split into four sequential sub-PRs (1a-d) that each leave the build clean:
+
+1. **PR 1a — `feat: MADR parser, renderer, types (additive subpackage)`** — new `internal/domain/decision/madr/` subpackage containing the MADR-shaped types, body and frontmatter parser, renderer, fixture set, and round-trip property test. Purely additive; old anchor-based code untouched; build remains green.
+2. **PR 1b — `feat: switch repository to MADR types; drop index.yaml`** — `FileDecisionRepository` rewritten on top of the `madr` package. Old `Decision`/`Links`/`DecisionContent` types deleted from the `decision` package. Service and validator updated minimally to compile.
+3. **PR 1c — `refactor: port adapters, interactors, cmd wiring to MADR types`** — mechanical type-only updates across `internal/application/`, `internal/adapter/`, and `cmd/`. Anchor utilities deleted. Build + tests green end-to-end.
+4. **PR 1d — `docs: rewrite models/clean in MADR; update README; smoke test`** — example model rewritten as MADR, README updated to point at MADR + spec, end-to-end smoke test added.
+5. **PR 2 — `feat: port commands to MADR data model + stdout/stderr split`** — every command ported. §B.3 applied uniformly. `set-config` header flags removed.
+6. **PR 3 — `feat: adg edit --from-stdin / --from-file with replace semantics`** — §B.4 with status gating.
+7. **PR 4 — `feat: adg migrate from legacy ADG format`** — one-shot conversion with all edge cases.
 
 ### User's migration path (post-PR-4)
 
