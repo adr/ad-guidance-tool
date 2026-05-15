@@ -4,8 +4,8 @@ import "github.com/spf13/cobra"
 
 var pluginCmd = &cobra.Command{
 	Use:   "plugin",
-	Short: "Manage ADE plugins.",
-	Long:  `Install, uninstall, update, and list ADE plugins.`,
+	Short: "Manage enforcement plugins.",
+	Long:  `Install, uninstall, update, and list enforcement plugins.`,
 }
 
 func init() {

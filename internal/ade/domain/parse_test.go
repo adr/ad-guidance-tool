@@ -3,6 +3,8 @@ package domain
 import (
 	"strings"
 	"testing"
+
+	"github.com/adr/ad-guidance-tool/internal/ade/rule"
 )
 
 func TestParseDSL_CleanArchitecture(t *testing.T) {
@@ -42,7 +44,7 @@ code "application_only_inward" {
 		t.Fatalf("expected 4 selectors, got %d", len(ir.Selectors))
 	}
 	for _, s := range ir.Selectors {
-		if s.Kind != SelectorKind_SELECTOR_COMPONENT {
+		if s.Kind != rule.SelectorKind_SELECTOR_COMPONENT {
 			t.Errorf("selector %q: expected COMPONENT kind, got %v", s.Name, s.Kind)
 		}
 	}
@@ -55,7 +57,7 @@ code "application_only_inward" {
 	if r0.Name != "domain_is_inner" {
 		t.Errorf("rule[0].Name = %q", r0.Name)
 	}
-	if r0.Kind != RuleKind_RULE_DEPEND_ONLY {
+	if r0.Kind != rule.RuleKind_RULE_DEPEND_ONLY {
 		t.Errorf("rule[0].Kind = %v", r0.Kind)
 	}
 	// Check From (TargetRefIR)
@@ -72,7 +74,7 @@ code "application_only_inward" {
 	if r0.Targets[0] == nil || r0.Targets[0].Value != "Domain" || r0.Targets[0].IsInline {
 		t.Errorf("rule[0].Targets[0] = %+v, want selector ref to 'Domain'", r0.Targets[0])
 	}
-	if r0.Severity != Severity_SEVERITY_ERROR {
+	if r0.Severity != rule.Severity_SEVERITY_ERROR {
 		t.Errorf("rule[0].Severity = %v", r0.Severity)
 	}
 }
@@ -101,7 +103,7 @@ code "meetings_isolated_from_payments" {
 		t.Fatalf("expected 4 selectors, got %d", len(ir.Selectors))
 	}
 	for _, s := range ir.Selectors {
-		if s.Kind != SelectorKind_SELECTOR_COMPONENT {
+		if s.Kind != rule.SelectorKind_SELECTOR_COMPONENT {
 			t.Errorf("selector %q: expected COMPONENT kind, got %v", s.Name, s.Kind)
 		}
 	}
@@ -110,7 +112,7 @@ code "meetings_isolated_from_payments" {
 		t.Fatalf("expected 1 rule, got %d", len(ir.Rules))
 	}
 	r := ir.Rules[0]
-	if r.Kind != RuleKind_RULE_NOT_DEPEND {
+	if r.Kind != rule.RuleKind_RULE_NOT_DEPEND {
 		t.Errorf("rule kind = %v, want RULE_NOT_DEPEND", r.Kind)
 	}
 	// Check From
@@ -128,7 +130,7 @@ code "meetings_isolated_from_payments" {
 	if len(r.Excludes) != 1 {
 		t.Fatalf("expected 1 exclusion, got %d", len(r.Excludes))
 	}
-	if r.Excludes[0].Kind != ExcludeKind_EXCLUDE_IMPLEMENT_INTERFACE {
+	if r.Excludes[0].Kind != rule.ExcludeKind_EXCLUDE_IMPLEMENT_INTERFACE {
 		t.Errorf("exclude kind = %v", r.Excludes[0].Kind)
 	}
 	if r.Excludes[0].Value != "MediatR.INotificationHandler<>" {
@@ -163,7 +165,7 @@ file "netarchtest_is_referenced" {
 	if len(r0.Checks) != 1 {
 		t.Fatalf("rule[0]: expected 1 check, got %d", len(r0.Checks))
 	}
-	if r0.Checks[0].Kind != CheckKind_CHECK_FS_MUST_EXIST {
+	if r0.Checks[0].Kind != rule.CheckKind_CHECK_FS_MUST_EXIST {
 		t.Errorf("check kind = %v", r0.Checks[0].Kind)
 	}
 	if r0.Checks[0].Path != "src/Tests/ArchTests/*.csproj" {
@@ -174,13 +176,13 @@ file "netarchtest_is_referenced" {
 	if len(r1.Checks) != 1 {
 		t.Fatalf("rule[1]: expected 1 check, got %d", len(r1.Checks))
 	}
-	if r1.Checks[0].Kind != CheckKind_CHECK_FS_MUST_CONTAIN {
+	if r1.Checks[0].Kind != rule.CheckKind_CHECK_FS_MUST_CONTAIN {
 		t.Errorf("check kind = %v", r1.Checks[0].Kind)
 	}
 	if r1.Checks[0].Pattern != `NetArchTest\\.Rules` {
 		t.Errorf("check pattern = %q", r1.Checks[0].Pattern)
 	}
-	if r1.Severity != Severity_SEVERITY_WARNING {
+	if r1.Severity != rule.Severity_SEVERITY_WARNING {
 		t.Errorf("severity = %v", r1.Severity)
 	}
 }
@@ -225,7 +227,7 @@ code "domain_classes_annotated" {
 		t.Fatalf("expected 1 rule, got %d", len(ir.Rules))
 	}
 	r := ir.Rules[0]
-	if r.Kind != RuleKind_RULE_ANNOTATE {
+	if r.Kind != rule.RuleKind_RULE_ANNOTATE {
 		t.Errorf("rule kind = %v, want RULE_ANNOTATE", r.Kind)
 	}
 	if r.From == nil {
@@ -234,7 +236,7 @@ code "domain_classes_annotated" {
 	if r.From.Value != "Handler" || !r.From.IsInline {
 		t.Errorf("rule.From = %+v, want inline class 'Handler'", r.From)
 	}
-	if r.From.Type != SelectorKind_SELECTOR_CLASS {
+	if r.From.Type != rule.SelectorKind_SELECTOR_CLASS {
 		t.Errorf("rule.From.Type = %v, want SELECTOR_CLASS", r.From.Type)
 	}
 	if len(r.Targets) != 1 {
@@ -265,14 +267,14 @@ code "classes_in_domain_annotated" {
 		t.Fatalf("expected 1 rule, got %d", len(ir.Rules))
 	}
 	r := ir.Rules[0]
-	if r.Kind != RuleKind_RULE_ANNOTATE {
+	if r.Kind != rule.RuleKind_RULE_ANNOTATE {
 		t.Errorf("rule kind = %v, want RULE_ANNOTATE", r.Kind)
 	}
 	if r.From == nil {
 		t.Fatal("rule.From is nil")
 	}
 	// Subject should be class type with empty value (all classes)
-	if r.From.Type != SelectorKind_SELECTOR_CLASS {
+	if r.From.Type != rule.SelectorKind_SELECTOR_CLASS {
 		t.Errorf("rule.From.Type = %v, want SELECTOR_CLASS", r.From.Type)
 	}
 	if r.From.Value != "" {
@@ -310,7 +312,7 @@ code "handler_in_domain" {
 	if r.From.Value != "EventHandler" {
 		t.Errorf("rule.From.Value = %q, want 'EventHandler'", r.From.Value)
 	}
-	if r.From.Type != SelectorKind_SELECTOR_CLASS {
+	if r.From.Type != rule.SelectorKind_SELECTOR_CLASS {
 		t.Errorf("rule.From.Type = %v, want SELECTOR_CLASS", r.From.Type)
 	}
 	if r.From.Scope == nil {
@@ -351,7 +353,7 @@ code "handlers_in_domain" {
 	if r.From.Scope.Value != "MyApp.Domain" || !r.From.Scope.IsInline {
 		t.Errorf("rule.From.Scope = %+v, want inline component 'MyApp.Domain'", r.From.Scope)
 	}
-	if r.From.Scope.Type != SelectorKind_SELECTOR_COMPONENT {
+	if r.From.Scope.Type != rule.SelectorKind_SELECTOR_COMPONENT {
 		t.Errorf("scope type = %v, want SELECTOR_COMPONENT", r.From.Scope.Type)
 	}
 }
@@ -374,7 +376,7 @@ code "classes_in_domain_no_infra" {
 	}
 
 	r := ir.Rules[0]
-	if r.Kind != RuleKind_RULE_NOT_DEPEND {
+	if r.Kind != rule.RuleKind_RULE_NOT_DEPEND {
 		t.Errorf("rule kind = %v, want RULE_NOT_DEPEND", r.Kind)
 	}
 	if r.From == nil || r.From.Scope == nil {

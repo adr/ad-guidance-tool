@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/adr/ad-guidance-tool/internal/ade/domain"
 	"github.com/adr/ad-guidance-tool/internal/ade/pluginstore"
+	"github.com/spf13/cobra"
 )
 
 var uninstallCmd = &cobra.Command{
@@ -14,7 +14,7 @@ var uninstallCmd = &cobra.Command{
 	Short: "Remove a plugin from the global plugin directory.",
 	Long: `Remove a globally installed plugin binary and its entry in the global config file.
 
-  ade plugin uninstall filecheck`,
+  adg enforce plugin uninstall filecheck`,
 
 	Args: cobra.ExactArgs(1),
 	Run:  uninstallCommand,

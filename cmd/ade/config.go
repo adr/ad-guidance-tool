@@ -28,11 +28,11 @@ Configurable keys:
   defaults.verify.plugin     Default plugin for 'enforce verify'
 
 Examples:
-  ade config set defaults.compile.plugin arch-go
-  ade config set defaults.compile.output ./internal --global
-  ade config get defaults.compile.plugin
-  ade config unset defaults.compile.plugin
-  ade config list`,
+  adg enforce config set defaults.compile.plugin arch-go
+  adg enforce config set defaults.compile.output ./internal --global
+  adg enforce config get defaults.compile.plugin
+  adg enforce config unset defaults.compile.plugin
+  adg enforce config list`,
 }
 
 var configSetCmd = &cobra.Command{

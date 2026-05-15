@@ -2,6 +2,7 @@ package ade
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 const (
 	FLAG_COMPILE_INPUT       = "input"
 	FLAG_COMPILE_INPUT_SHORT = "i"
-	FLAG_COMPILE_INPUT_USAGE = "input path containing decision (required)"
+	FLAG_COMPILE_INPUT_USAGE = "path to a .rule file or a directory of .rule files (required)"
 
 	FLAG_COMPILE_PLUGIN       = "plugin"
 	FLAG_COMPILE_PLUGIN_SHORT = "p"
@@ -34,8 +35,8 @@ The plugin generates test code (e.g. a Go test file) in the output directory.
 Run the generated tests separately to validate the rules.
 
 Examples:
-  ade enforce compile -i docs/0001.rule -p arch-go -o ./internal
-  ade enforce compile -i docs/ -p arch-go -o ./internal`,
+  adg enforce compile -i docs/0001.rule -p arch-go -o ./internal
+  adg enforce compile -i docs/ -p arch-go -o ./internal`,
 	Run: enforceCompileCommand,
 }
 
@@ -79,9 +80,36 @@ func enforceCompileCommand(cmd *cobra.Command, args []string) {
 
 	domain.CheckFatalError(shared.ValidatePluginMode(plugin, "compile"), "validating plugin mode")
 
-	compileapp.Compile(compileapp.CompileInfo{
-		InputFile:  input,
-		PluginName: plugin,
-		OutputDir:  output,
+	ruleFiles, err := collectRuleFilePaths(input)
+	domain.CheckFatalError(err, "resolving input path")
+
+	for _, f := range ruleFiles {
+		compileapp.Compile(compileapp.CompileInfo{
+			InputFile:  f,
+			PluginName: plugin,
+			OutputDir:  output,
+		})
+	}
+}
+
+// collectRuleFilePaths returns .rule file paths from a file or directory.
+func collectRuleFilePaths(path string) ([]string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.IsDir() {
+		return []string{path}, nil
+	}
+	var files []string
+	err = filepath.Walk(path, func(p string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !fi.IsDir() && strings.HasSuffix(p, ".rule") {
+			files = append(files, p)
+		}
+		return nil
 	})
+	return files, err
 }

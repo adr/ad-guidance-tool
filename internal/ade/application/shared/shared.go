@@ -9,6 +9,7 @@ import (
 	"os/exec"
 
 	"github.com/adr/ad-guidance-tool/internal/ade/domain"
+	"github.com/adr/ad-guidance-tool/internal/ade/rule"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -56,7 +57,7 @@ func ValidatePluginMode(plugin, requestedMode string) error {
 }
 
 // CompileSpec reads and parses a DSL rule file, returning the SpecIR.
-func CompileSpec(path string) (*domain.SpecIR, error) {
+func CompileSpec(path string) (*rule.SpecIR, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
@@ -71,7 +72,7 @@ func CompileSpec(path string) (*domain.SpecIR, error) {
 
 // RunPlugin serialises ir as protobuf, pipes it into the plugin process and
 // streams stdout/stderr back to the caller's console.
-func RunPlugin(plugin string, ir *domain.SpecIR) error {
+func RunPlugin(plugin string, ir *rule.SpecIR) error {
 	path, err := domain.ResolvePluginPath(plugin)
 	if err != nil {
 		return err

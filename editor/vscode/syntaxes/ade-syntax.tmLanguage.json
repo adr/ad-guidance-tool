@@ -1,0 +1,164 @@
+{
+  "name": "ADE Syntax",
+  "scopeName": "source.ade-syntax",
+  "fileTypes": ["rule"],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#adr-declaration"
+    },
+    {
+      "include": "#selector-declaration"
+    },
+    {
+      "include": "#custom-block"
+    },
+    {
+      "include": "#rule-block"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "name": "comment.line.number-sign.ade-syntax",
+      "match": "#.*$"
+    },
+    "adr-declaration": {
+      "begin": "\\b(adr)\\b",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.type.ade-syntax"
+        }
+      },
+      "end": "$",
+      "patterns": [
+        {
+          "include": "#strings"
+        }
+      ]
+    },
+    "selector-declaration": {
+      "begin": "\\b(component|class|interface|path)\\b",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.type.ade-syntax"
+        }
+      },
+      "end": "$",
+      "patterns": [
+        {
+          "match": "=",
+          "name": "keyword.operator.assignment.ade-syntax"
+        },
+        {
+          "include": "#strings"
+        }
+      ]
+    },
+    "custom-block": {
+      "comment": "custom block - body is opaque, so rule-statements are intentionally excluded",
+      "begin": "\\b(custom)\\b(?=\\s+\")",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.type.ade-syntax"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#comments"
+        }
+      ]
+    },
+    "rule-block": {
+      "begin": "\\b(file|code)\\b(?=\\s+\")",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.type.ade-syntax"
+        }
+      },
+      "end": "(?<=\\})",
+      "patterns": [
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#rule-statements"
+        },
+        {
+          "include": "#comments"
+        }
+      ]
+    },
+    "rule-statements": {
+      "patterns": [
+        {
+          "match": "\\b(component|class|interface|path)\\b",
+          "name": "storage.type.ade-syntax"
+        },
+        {
+          "match": "^\\s*([A-Z][A-Za-z0-9_]*)(?=\\s+must\\b)",
+          "captures": {
+            "1": {
+              "name": "entity.name.type.ade-syntax"
+            }
+          }
+        },
+        {
+          "match": "(?<=\\b(?:depend\\s+(?:on\\s+)?|implement\\s+(?:interface\\s+)?|extend\\s+(?:class\\s+)?|accessed\\s+by\\s+))([A-Z][A-Za-z0-9_]*)\\b",
+          "captures": {
+            "1": {
+              "name": "entity.name.type.ade-syntax"
+            }
+          }
+        },
+        {
+          "match": "(?<=,\\s*)([A-Z][A-Za-z0-9_]*)(?=\\s*(?:,|\\n|\\r|$|severity))",
+          "captures": {
+            "1": {
+              "name": "entity.name.type.ade-syntax"
+            }
+          }
+        },
+        {
+          "match": "(?<=\\bin\\s+(?:component\\s+)?)([A-Z][A-Za-z0-9_]*)\\b",
+          "captures": {
+            "1": {
+              "name": "entity.name.type.ade-syntax"
+            }
+          }
+        },
+        {
+          "match": "\\b(must|not|only|depend|exist|contain|implement|extend|accessed|acyclic|annotated|implementing|match|exclude|in|severity|on|be|by|with)\\b",
+          "name": "keyword.control.ade-syntax"
+        },
+        {
+          "match": "\\b(public|internal|private|abstract|sealed|static|warning|error)\\b",
+          "name": "constant.numeric.ade-syntax"
+        },
+        {
+          "match": "\\b(regex):",
+          "name": "support.constant.ade-syntax"
+        },
+        {
+          "include": "#strings"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.ade-syntax",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.ade-syntax",
+          "match": "\\\\."
+        }
+      ]
+    }
+  }
+}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/adr/ad-guidance-tool/internal/ade/application/shared"
 	"github.com/adr/ad-guidance-tool/internal/ade/domain"
+	"github.com/adr/ad-guidance-tool/internal/ade/rule"
 )
 
 type VerifyInfo struct {
@@ -22,7 +23,7 @@ func Verify(info VerifyInfo) {
 	if info.RootDir != "" {
 		ir.OutputDir = info.RootDir
 	}
-	ir.Mode = domain.InvocationMode_MODE_VERIFY
+	ir.Mode = rule.InvocationMode_MODE_VERIFY
 
 	slog.Debug("executing plugin", "plugin", info.PluginName)
 

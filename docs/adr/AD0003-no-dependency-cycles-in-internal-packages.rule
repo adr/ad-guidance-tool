@@ -1,0 +1,9 @@
+adr "0003" "No dependency cycles in internal packages"
+
+component "Internal" = "github.com/adr/ad-guidance-tool/internal.."
+
+code "no_cycles_in_internal" {
+  Internal must be acyclic
+  severity error
+}
+

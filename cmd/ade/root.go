@@ -20,7 +20,7 @@ var configFileUsed string
 
 var enforceCmd = &cobra.Command{
 	Use:   "enforce",
-	Short: "Architectural Decision Enforcement (ADE) commands.",
+	Short: "Enforce architectural decisions using rule files.",
 	Long:  `Commands for enforcing architectural decisions: validate rule files, compile rules into test artifacts, verify rules against the codebase, and manage plugins and configuration.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		initADEConfig()

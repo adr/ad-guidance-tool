@@ -1,13 +1,14 @@
 package decision
 
 import (
-	"github.com/adr/ad-guidance-tool/internal/application/inputport"
-	"github.com/adr/ad-guidance-tool/internal/application/outputport"
-	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/adr/ad-guidance-tool/internal/application/inputport"
+	"github.com/adr/ad-guidance-tool/internal/application/outputport"
+	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 )
 
 type RuleInteractor struct {
@@ -89,9 +90,16 @@ func (i *RuleInteractor) Rule(modelPath, id, title, outputPath string) error {
 func generateRuleTemplate(id, title string) string {
 	return fmt.Sprintf(`adr "%s" "%s"
 
-# add your rules here
-rule "rule_name" {
-  
+# component "MyComponent" = "com.example.mypackage"
+# path "MyPath" = "src/mypackage"
+
+code "rule_name" {
+  # MyComponent must not depend on MyOtherComponent
+  severity error
+}
+
+file "rule_name" {
+  # path "**/*.go" must exist
   severity error
 }
 `, id, title)

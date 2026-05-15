@@ -6,9 +6,9 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	"github.com/spf13/cobra"
 	"github.com/adr/ad-guidance-tool/internal/ade/domain"
 	"github.com/adr/ad-guidance-tool/internal/ade/pluginstore"
+	"github.com/spf13/cobra"
 )
 
 var listCmd = &cobra.Command{
@@ -39,7 +39,7 @@ func listCommand(cmd *cobra.Command, args []string) {
 	domain.CheckFatalError(err, "reading global config")
 
 	if len(plugins) == 0 {
-		fmt.Println("no plugins registered; use 'ade install' to add one")
+		fmt.Println("no plugins registered; use 'adg enforce plugin install' to add one")
 		return
 	}
 

@@ -23,9 +23,9 @@ var validateCmd = &cobra.Command{
 This command parses the rule files and reports any syntax or semantic errors
 without actually executing any plugin.
 Examples:
-  ade validate -i rules/0001.rule
-  ade validate -i rules/
-  ade validate -i rules/0001.rule -i rules/0002.rule`,
+  adg enforce validate -i rules/0001.rule
+  adg enforce validate -i rules/
+  adg enforce validate -i rules/0001.rule -i rules/0002.rule`,
 	Run: validateCommand,
 }
 

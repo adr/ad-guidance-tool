@@ -5,6 +5,7 @@ import (
 
 	"github.com/adr/ad-guidance-tool/internal/ade/application/shared"
 	"github.com/adr/ad-guidance-tool/internal/ade/domain"
+	"github.com/adr/ad-guidance-tool/internal/ade/rule"
 )
 
 type CompileInfo struct {
@@ -20,7 +21,7 @@ func Compile(info CompileInfo) {
 	domain.CheckFatalError(err, "compiling spec")
 
 	ir.OutputDir = info.OutputDir
-	ir.Mode = domain.InvocationMode_MODE_COMPILE
+	ir.Mode = rule.InvocationMode_MODE_COMPILE
 
 	slog.Debug("executing plugin", "plugin", info.PluginName)
 

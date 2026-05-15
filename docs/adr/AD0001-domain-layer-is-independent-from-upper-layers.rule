@@ -1,0 +1,22 @@
+adr "0001" "Domain layer is independent from upper layers"
+
+component "Domain"         = "github.com/adr/ad-guidance-tool/internal/domain.."
+component "Application"    = "github.com/adr/ad-guidance-tool/internal/application.."
+component "Adapter"        = "github.com/adr/ad-guidance-tool/internal/adapter.."
+component "Infrastructure" = "github.com/adr/ad-guidance-tool/internal/infrastructure.."
+
+code "domain_does_not_import_application" {
+  Domain must not depend on Application
+  severity error
+}
+
+code "domain_does_not_import_adapter" {
+  Domain must not depend on Adapter
+  severity error
+}
+
+code "domain_does_not_import_infrastructure" {
+  Domain must not depend on Infrastructure
+  severity error
+}
+

@@ -54,6 +54,7 @@ Available Commands:
   copy         Copies a model, optionally a subset based on filters
   decide       Marks a decision as decided by selecting one of its options
   edit         Edit a decision file
+  enforce      Enforce architectural decisions using rule files.
   help         Help about any command
   import       Imports a decision model into an existing model
   init         Initializes a new model
@@ -204,7 +205,7 @@ This will add a new section **Outcome** pointing out the chosen option and a rat
 
 ### Generating rule files for ADRs
 
-ADG can generate `.rule` files based on your architectural decisions. These rule files use the ADR-DSL format and can be used to define enforceable architectural rules that can be validated by static analysis tools.
+ADG can generate `.rule` files based on your architectural decisions. These rule files encode architectural rules in a domain-specific language that can be compiled into architecture tests or verified directly using `adg enforce`.
 
 To generate a rule file for an existing decision:
 
@@ -237,14 +238,21 @@ The generated rule file contains a template with the ADR ID and title pre-filled
 ```dsl
 adr "0001" "my-decision-title"
 
-# add your rules here
-rule "rule_name" {
-  
+# component "MyComponent" = "com.example.mypackage"
+# path "MyPath" = "src/mypackage"
+
+code "rule_name" {
+  # MyComponent must not depend on MyOtherComponent
+  severity error
+}
+
+file "rule_name" {
+  # path "**/*.go" must exist
   severity error
 }
 ```
 
-You can then customize this file to define specific architectural rules based on your decision.
+You can then customize this file to define specific architectural rules based on your decision. See the [Enforcement](#enforcement) section for how to compile or verify rule files.
 
 ### Config
 
@@ -263,7 +271,104 @@ To reset all configuration values (and use the default configuration path again)
 adg reset-config
 ```
 
-### Example Model
+## Enforcement
+
+ADG can enforce architectural decisions by compiling them into executable architecture tests or by verifying them directly against your codebase. Rules are written in a domain-specific language (DSL) and stored in `.rule` files alongside your ADRs.
+
+### Writing a rule file
+
+Use `adg rule` to generate a template from an existing decision, then customize it:
+
+```dsl
+adr "0001" "Use Clean Architecture"
+
+component "Domain" = "MyApp.Domain"
+component "Infra"  = "MyApp.Infrastructure"
+
+code "domain_isolated" {
+  Domain must not depend on Infra
+  severity error
+}
+
+file "tests_exist" {
+  path "tests/ArchTests/" must exist
+  severity error
+}
+```
+
+See [docs/dsl.md](docs/dsl.md) for the full DSL reference.
+
+### Validating rule files
+
+Check rule files for syntax errors without running any plugin:
+
+```bash
+adg enforce validate -i my-adr.rule
+adg enforce validate -i rules/     # validate all .rule files in a directory
+```
+
+### Compiling into architecture tests
+
+Compile rule files into executable tests using a language-specific plugin:
+
+```bash
+adg enforce compile -i my-adr.rule -p arch-go -o ./internal      # Go (arch-go)
+adg enforce compile -i my-adr.rule -p netarch -o ./src/Tests      # .NET (NetArchTest)
+```
+
+The generated test file is compiled and run as part of your normal test pipeline (`go test`, `dotnet test`).
+
+### Verifying directly
+
+`file` rules can be verified immediately against the filesystem without generating any test code:
+
+```bash
+adg enforce verify -i my-adr.rule -p filecheck
+```
+
+### Plugins
+
+Enforcement relies on plugins, which are separate executables that receive the parsed rule intermediate representation (IR) and generate tests or perform checks.
+
+| Plugin                                                                  | Target    | Description                                                                                      |
+| ----------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------ |
+| [`adplugin-arch-go`](https://github.com/phi42/adplugin-arch-go)         | Go        | Compiles `code` rules into [arch-go](https://github.com/arch-go/arch-go) tests                   |
+| [`adplugin-netarchtest`](https://github.com/phi42/adplugin-netarchtest) | .NET / C# | Compiles `code` rules into [NetArchTest](https://github.com/BenMorris/NetArchTest) + NUnit tests |
+| [`adplugin-fscheck`](https://github.com/phi42/adplugin-fscheck)         | Any       | Executes `file` rules directly against the filesystem                                            |
+
+Install a plugin from a GitHub release:
+
+```bash
+adg enforce plugin install arch-go --repo github.com/phi42/adplugin-arch-go
+```
+
+Or register a locally built binary:
+
+```bash
+adg enforce plugin install filecheck --path ./path/to/filecheck
+```
+
+### Configuration defaults
+
+To avoid passing `-p` and `-o` on every run:
+
+```bash
+adg enforce config set defaults.compile.plugin arch-go
+adg enforce config set defaults.compile.output ./internal
+adg enforce config set defaults.verify.plugin  filecheck
+```
+
+Defaults are stored in `.ade.yaml` in the project directory or in the global config. See [docs/enforcement.md](docs/enforcement.md) for the full command reference and configuration details.
+
+### VS Code extension
+
+A syntax-highlighting extension for `.rule` files is available in [editor/vscode](editor/vscode/). Install from the [latest release](https://github.com/adr/ad-guidance-tool/releases):
+
+```bash
+code --install-extension ade-syntax.vsix
+```
+
+## Example Model
 
 In the [models/clean](/models/clean/) directory, you’ll find a sample model containing common architectural decisions based on **Clean Architecture**.
 

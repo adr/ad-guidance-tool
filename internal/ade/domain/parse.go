@@ -5,8 +5,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/adr/ad-guidance-tool/internal/ade/parser"
+	"github.com/adr/ad-guidance-tool/internal/ade/rule"
+	"github.com/antlr4-go/antlr/v4"
 )
 
 // customBlockRE matches the header of a custom block:
@@ -19,10 +20,10 @@ var customBlockRE = regexp.MustCompile(
 )
 
 // extractCustomBlocks scans src for custom blocks, extracts each one into a
-// RuleIR with IsCustomRule=true, and replaces the block in src with an equal
+// rule.RuleIR with IsCustomRule=true, and replaces the block in src with an equal
 // number of newlines so that ANTLR line numbers remain correct.
-func extractCustomBlocks(src string) (string, []*RuleIR, error) {
-	var rules []*RuleIR
+func extractCustomBlocks(src string) (string, []*rule.RuleIR, error) {
+	var rules []*rule.RuleIR
 	cleaned := src
 
 	for {
@@ -49,7 +50,7 @@ func extractCustomBlocks(src string) (string, []*RuleIR, error) {
 		rawBody := cleaned[braceStart+1 : closePos]
 		rawBody = strings.TrimSpace(rawBody)
 
-		rules = append(rules, &RuleIR{
+		rules = append(rules, &rule.RuleIR{
 			Name:         ruleName,
 			IsCustomRule: true,
 			RawBody:      rawBody,
@@ -85,9 +86,9 @@ func findMatchingBrace(src string, openPos int) int {
 }
 
 // ParseDSL parses a DSL source string using the ANTLR grammar and returns
-// the corresponding protobuf SpecIR. It performs semantic validation after
+// the corresponding protobuf rule.SpecIR. It performs semantic validation after
 // building the IR.
-func ParseDSL(src string) (*SpecIR, error) {
+func ParseDSL(src string) (*rule.SpecIR, error) {
 	// Extract custom blocks before ANTLR parsing. Custom block bodies contain
 	// arbitrary text that the lexer cannot tokenize, so we pull them out first
 	// and replace each block with newlines to preserve line numbers.
@@ -115,7 +116,7 @@ func ParseDSL(src string) (*SpecIR, error) {
 		return nil, fmt.Errorf("syntax errors:\n%s", strings.Join(errListener.errors, "\n"))
 	}
 
-	// Visit the parse tree and build SpecIR
+	// Visit the parse tree and build rule.SpecIR
 	visitor := &irVisitor{}
 	result := tree.Accept(visitor)
 
@@ -123,9 +124,9 @@ func ParseDSL(src string) (*SpecIR, error) {
 		return nil, visitor.err
 	}
 
-	ir, ok := result.(*SpecIR)
+	ir, ok := result.(*rule.SpecIR)
 	if !ok {
-		return nil, fmt.Errorf("visitor did not return SpecIR")
+		return nil, fmt.Errorf("visitor did not return rule.SpecIR")
 	}
 
 	// Append custom rules extracted during pre-processing
@@ -170,9 +171,9 @@ func unquote(s string) string {
 	return strings.ReplaceAll(s, `\"`, `"`)
 }
 
-// VisitFile builds the complete SpecIR from the file context
+// VisitFile builds the complete rule.SpecIR from the file context
 func (v *irVisitor) VisitFile(ctx *parser.FileContext) interface{} {
-	ir := &SpecIR{}
+	ir := &rule.SpecIR{}
 	selectors := make(map[string]bool)
 	ruleNames := make(map[string]bool)
 
@@ -183,7 +184,7 @@ func (v *irVisitor) VisitFile(ctx *parser.FileContext) interface{} {
 			if v.err != nil {
 				return nil
 			}
-			ir.Adr = adrIR.(*AdrIR)
+			ir.Adr = adrIR.(*rule.AdrIR)
 		}
 	}
 
@@ -194,7 +195,7 @@ func (v *irVisitor) VisitFile(ctx *parser.FileContext) interface{} {
 			if v.err != nil {
 				return nil
 			}
-			selector := selIR.(*SelectorIR)
+			selector := selIR.(*rule.SelectorIR)
 
 			// Check for duplicates
 			if selectors[selector.Name] {
@@ -213,7 +214,7 @@ func (v *irVisitor) VisitFile(ctx *parser.FileContext) interface{} {
 			if v.err != nil {
 				return nil
 			}
-			r := ruleIR.(*RuleIR)
+			r := ruleIR.(*rule.RuleIR)
 
 			// Check for duplicates
 			if ruleNames[r.Name] {
@@ -235,7 +236,7 @@ func (v *irVisitor) VisitAdrDecl(ctx *parser.AdrDeclContext) interface{} {
 		v.err = fmt.Errorf("line %d: adr requires id and title", ctx.GetStart().GetLine())
 		return nil
 	}
-	return &AdrIR{
+	return &rule.AdrIR{
 		Id:    unquote(strs[0].GetText()),
 		Title: unquote(strs[1].GetText()),
 	}
@@ -249,19 +250,19 @@ func (v *irVisitor) VisitSelectorDecl(ctx *parser.SelectorDeclContext) interface
 		return nil
 	}
 
-	var kind SelectorKind
+	var kind rule.SelectorKind
 	switch {
 	case ctx.COMPONENT() != nil:
-		kind = SelectorKind_SELECTOR_COMPONENT
+		kind = rule.SelectorKind_SELECTOR_COMPONENT
 	case ctx.CLASS() != nil:
-		kind = SelectorKind_SELECTOR_CLASS
+		kind = rule.SelectorKind_SELECTOR_CLASS
 	case ctx.INTERFACE() != nil:
-		kind = SelectorKind_SELECTOR_INTERFACE
+		kind = rule.SelectorKind_SELECTOR_INTERFACE
 	case ctx.PATH() != nil:
-		kind = SelectorKind_SELECTOR_PATH
+		kind = rule.SelectorKind_SELECTOR_PATH
 	}
 
-	return &SelectorIR{
+	return &rule.SelectorIR{
 		Name:    unquote(strs[0].GetText()),
 		Kind:    kind,
 		Pattern: unquote(strs[1].GetText()),
@@ -270,14 +271,14 @@ func (v *irVisitor) VisitSelectorDecl(ctx *parser.SelectorDeclContext) interface
 
 // VisitRuleDecl builds a complete rule with all its statements
 func (v *irVisitor) VisitRuleDecl(ctx *parser.RuleDeclContext) interface{} {
-	rule := &RuleIR{
+	ir := &rule.RuleIR{
 		Name: unquote(ctx.STRING().GetText()),
 	}
 
 	// Determine if this is a file rule or code rule
 	if ruleTypeCtx := ctx.RuleType(); ruleTypeCtx != nil {
 		if rt, ok := ruleTypeCtx.(*parser.RuleTypeContext); ok {
-			rule.IsFileRule = rt.FILE() != nil
+			ir.IsFileRule = rt.FILE() != nil
 		}
 	}
 
@@ -286,7 +287,7 @@ func (v *irVisitor) VisitRuleDecl(ctx *parser.RuleDeclContext) interface{} {
 		// Assertion statement
 		if assertCtx := stmtCtx.AssertionStmt(); assertCtx != nil {
 			if assert, ok := assertCtx.(*parser.AssertionStmtContext); ok {
-				v.visitAssertionStmt(assert, rule)
+				v.visitAssertionStmt(assert, ir)
 				if v.err != nil {
 					return nil
 				}
@@ -300,25 +301,25 @@ func (v *irVisitor) VisitRuleDecl(ctx *parser.RuleDeclContext) interface{} {
 				return nil
 			}
 			if excl != nil {
-				rule.Excludes = append(rule.Excludes, excl)
+				ir.Excludes = append(ir.Excludes, excl)
 			}
 		}
 
-		// Severity statement
+		// ir.Severity statement
 		if sevCtx := stmtCtx.SeverityStmt(); sevCtx != nil {
 			if sev, ok := sevCtx.(*parser.SeverityStmtContext); ok {
-				rule.Severity = v.visitSeverityStmt(sev)
+				ir.Severity = v.visitSeverityStmt(sev)
 			}
 		}
 	}
 
-	return rule
+	return ir
 }
 
 // visitAssertionStmt processes an assertion and updates the rule
-func (v *irVisitor) visitAssertionStmt(ctx *parser.AssertionStmtContext, rule *RuleIR) {
+func (v *irVisitor) visitAssertionStmt(ctx *parser.AssertionStmtContext, ir *rule.RuleIR) {
 	// Extract subject
-	rule.From = v.visitSubjectExpr(ctx.SubjectExpr())
+	ir.From = v.visitSubjectExpr(ctx.SubjectExpr())
 	if v.err != nil {
 		return
 	}
@@ -327,37 +328,37 @@ func (v *irVisitor) visitAssertionStmt(ctx *parser.AssertionStmtContext, rule *R
 	mod := v.visitMustExpr(ctx.MustExpr())
 
 	// Extract verb phrase and set rule kind + targets
-	v.visitVerbPhrase(ctx.VerbPhrase(), mod, rule)
+	v.visitVerbPhrase(ctx.VerbPhrase(), mod, ir)
 }
 
-// visitSubjectExpr converts a subjectExpr to TargetRefIR
-func (v *irVisitor) visitSubjectExpr(ctx parser.ISubjectExprContext) *TargetRefIR {
+// visitSubjectExpr converts a subjectExpr to rule.TargetRefIR
+func (v *irVisitor) visitSubjectExpr(ctx parser.ISubjectExprContext) *rule.TargetRefIR {
 	if ctx == nil {
 		return nil
 	}
 
 	switch c := ctx.(type) {
 	case *parser.SelectorRefContext:
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    c.IDENTIFIER().GetText(),
 			IsInline: false,
 		}
 	case *parser.InlineLiteralContext:
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    unquote(c.STRING().GetText()),
 			IsInline: true,
 			Type:     v.getSelectorKind(c.SelectorType()),
 			IsMatch:  false,
 		}
 	case *parser.InlineMatchContext:
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    unquote(c.STRING().GetText()),
 			IsInline: true,
 			Type:     v.getSelectorKind(c.SelectorType()),
 			IsMatch:  true,
 		}
 	case *parser.InlineTypeContext:
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    "",
 			IsInline: true,
 			Type:     v.getSelectorKind(c.SelectorType()),
@@ -365,7 +366,7 @@ func (v *irVisitor) visitSubjectExpr(ctx parser.ISubjectExprContext) *TargetRefI
 		}
 	case *parser.SubsetAllContext:
 		scope := v.visitTargetExpr(c.TargetExpr())
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    "",
 			IsInline: true,
 			Type:     v.getSelectorKind(c.SelectorType()),
@@ -374,7 +375,7 @@ func (v *irVisitor) visitSubjectExpr(ctx parser.ISubjectExprContext) *TargetRefI
 		}
 	case *parser.SubsetLiteralContext:
 		scope := v.visitTargetExpr(c.TargetExpr())
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    unquote(c.STRING().GetText()),
 			IsInline: true,
 			Type:     v.getSelectorKind(c.SelectorType()),
@@ -383,7 +384,7 @@ func (v *irVisitor) visitSubjectExpr(ctx parser.ISubjectExprContext) *TargetRefI
 		}
 	case *parser.SubsetMatchContext:
 		scope := v.visitTargetExpr(c.TargetExpr())
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    unquote(c.STRING().GetText()),
 			IsInline: true,
 			Type:     v.getSelectorKind(c.SelectorType()),
@@ -394,34 +395,34 @@ func (v *irVisitor) visitSubjectExpr(ctx parser.ISubjectExprContext) *TargetRefI
 	return nil
 }
 
-// visitTargetExpr converts a targetExpr to TargetRefIR
-func (v *irVisitor) visitTargetExpr(ctx parser.ITargetExprContext) *TargetRefIR {
+// visitTargetExpr converts a targetExpr to rule.TargetRefIR
+func (v *irVisitor) visitTargetExpr(ctx parser.ITargetExprContext) *rule.TargetRefIR {
 	if ctx == nil {
 		return nil
 	}
 
 	switch c := ctx.(type) {
 	case *parser.TargetSelectorRefContext:
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    c.IDENTIFIER().GetText(),
 			IsInline: false,
 		}
 	case *parser.TargetInlineLiteralContext:
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    unquote(c.STRING().GetText()),
 			IsInline: true,
 			Type:     v.getSelectorKind(c.SelectorType()),
 			IsMatch:  false,
 		}
 	case *parser.TargetInlineMatchContext:
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    unquote(c.STRING().GetText()),
 			IsInline: true,
 			Type:     v.getSelectorKind(c.SelectorType()),
 			IsMatch:  true,
 		}
 	case *parser.TargetStringLiteralContext:
-		return &TargetRefIR{
+		return &rule.TargetRefIR{
 			Value:    unquote(c.STRING().GetText()),
 			IsInline: true,
 			IsMatch:  false,
@@ -430,23 +431,23 @@ func (v *irVisitor) visitTargetExpr(ctx parser.ITargetExprContext) *TargetRefIR 
 	return nil
 }
 
-// getSelectorKind converts a grammar selectorType to protobuf SelectorKind
-func (v *irVisitor) getSelectorKind(ctx parser.ISelectorTypeContext) SelectorKind {
+// getSelectorKind converts a grammar selectorType to protobuf rule.SelectorKind
+func (v *irVisitor) getSelectorKind(ctx parser.ISelectorTypeContext) rule.SelectorKind {
 	if ctx == nil {
-		return SelectorKind_SELECTOR_UNSPECIFIED
+		return rule.SelectorKind_SELECTOR_UNSPECIFIED
 	}
 
 	switch {
 	case ctx.COMPONENT() != nil:
-		return SelectorKind_SELECTOR_COMPONENT
+		return rule.SelectorKind_SELECTOR_COMPONENT
 	case ctx.CLASS() != nil:
-		return SelectorKind_SELECTOR_CLASS
+		return rule.SelectorKind_SELECTOR_CLASS
 	case ctx.INTERFACE() != nil:
-		return SelectorKind_SELECTOR_INTERFACE
+		return rule.SelectorKind_SELECTOR_INTERFACE
 	case ctx.PATH() != nil:
-		return SelectorKind_SELECTOR_PATH
+		return rule.SelectorKind_SELECTOR_PATH
 	}
-	return SelectorKind_SELECTOR_UNSPECIFIED
+	return rule.SelectorKind_SELECTOR_UNSPECIFIED
 }
 
 // modality represents the must expression type
@@ -479,7 +480,7 @@ func (v *irVisitor) visitMustExpr(ctx parser.IMustExprContext) modality {
 }
 
 // visitVerbPhrase processes the verb phrase and updates the rule
-func (v *irVisitor) visitVerbPhrase(ctx parser.IVerbPhraseContext, mod modality, rule *RuleIR) {
+func (v *irVisitor) visitVerbPhrase(ctx parser.IVerbPhraseContext, mod modality, ir *rule.RuleIR) {
 	if ctx == nil {
 		return
 	}
@@ -490,15 +491,15 @@ func (v *irVisitor) visitVerbPhrase(ctx parser.IVerbPhraseContext, mod modality,
 		for _, tctx := range c.AllTargetExpr() {
 			target := v.visitTargetExpr(tctx)
 			if target != nil {
-				rule.Targets = append(rule.Targets, target)
+				ir.Targets = append(ir.Targets, target)
 			}
 		}
 		// Set rule kind
 		switch mod {
 		case modalityMustNot:
-			rule.Kind = RuleKind_RULE_NOT_DEPEND
+			ir.Kind = rule.RuleKind_RULE_NOT_DEPEND
 		case modalityMustOnly:
-			rule.Kind = RuleKind_RULE_DEPEND_ONLY
+			ir.Kind = rule.RuleKind_RULE_DEPEND_ONLY
 		case modalityMust:
 			v.err = fmt.Errorf("invalid dependency rule: use 'must not' or 'must only', not plain 'must'")
 		}
@@ -508,13 +509,13 @@ func (v *irVisitor) visitVerbPhrase(ctx parser.IVerbPhraseContext, mod modality,
 			v.err = fmt.Errorf("invalid 'must only exist' - use 'must exist'")
 			return
 		}
-		kind := CheckKind_CHECK_FS_MUST_EXIST
+		kind := rule.CheckKind_CHECK_FS_MUST_EXIST
 		if mod == modalityMustNot {
-			kind = CheckKind_CHECK_FS_MUST_NOT_EXIST
+			kind = rule.CheckKind_CHECK_FS_MUST_NOT_EXIST
 		}
-		rule.Checks = append(rule.Checks, &CheckIR{
+		ir.Checks = append(ir.Checks, &rule.CheckIR{
 			Kind: kind,
-			Path: rule.From.Value,
+			Path: ir.From.Value,
 		})
 
 	case *parser.ContainPhraseContext:
@@ -523,51 +524,51 @@ func (v *irVisitor) visitVerbPhrase(ctx parser.IVerbPhraseContext, mod modality,
 			return
 		}
 		pattern := unquote(c.STRING().GetText())
-		kind := CheckKind_CHECK_FS_MUST_CONTAIN
+		kind := rule.CheckKind_CHECK_FS_MUST_CONTAIN
 		if mod == modalityMustNot {
-			kind = CheckKind_CHECK_FS_MUST_NOT_CONTAIN
+			kind = rule.CheckKind_CHECK_FS_MUST_NOT_CONTAIN
 		}
-		rule.Checks = append(rule.Checks, &CheckIR{
+		ir.Checks = append(ir.Checks, &rule.CheckIR{
 			Kind:    kind,
-			Path:    rule.From.Value,
+			Path:    ir.From.Value,
 			Pattern: pattern,
 		})
 
 	case *parser.ImplementPhraseContext:
 		target := v.visitTargetExpr(c.TargetExpr())
 		if target != nil {
-			rule.Targets = append(rule.Targets, target)
+			ir.Targets = append(ir.Targets, target)
 		}
 		switch mod {
 		case modalityMust, modalityMustOnly:
-			rule.Kind = RuleKind_RULE_IMPLEMENT
+			ir.Kind = rule.RuleKind_RULE_IMPLEMENT
 		case modalityMustNot:
-			rule.Kind = RuleKind_RULE_NOT_IMPLEMENT
+			ir.Kind = rule.RuleKind_RULE_NOT_IMPLEMENT
 		}
 
 	case *parser.ExtendPhraseContext:
 		target := v.visitTargetExpr(c.TargetExpr())
 		if target != nil {
-			rule.Targets = append(rule.Targets, target)
+			ir.Targets = append(ir.Targets, target)
 		}
 		switch mod {
 		case modalityMust, modalityMustOnly:
-			rule.Kind = RuleKind_RULE_EXTEND
+			ir.Kind = rule.RuleKind_RULE_EXTEND
 		case modalityMustNot:
-			rule.Kind = RuleKind_RULE_NOT_EXTEND
+			ir.Kind = rule.RuleKind_RULE_NOT_EXTEND
 		}
 
 	case *parser.AnnotatedPhraseContext:
 		annotation := unquote(c.STRING().GetText())
-		rule.Targets = append(rule.Targets, &TargetRefIR{
+		ir.Targets = append(ir.Targets, &rule.TargetRefIR{
 			Value:    annotation,
 			IsInline: true,
 		})
 		switch mod {
 		case modalityMust:
-			rule.Kind = RuleKind_RULE_ANNOTATE
+			ir.Kind = rule.RuleKind_RULE_ANNOTATE
 		case modalityMustNot:
-			rule.Kind = RuleKind_RULE_NOT_ANNOTATE
+			ir.Kind = rule.RuleKind_RULE_NOT_ANNOTATE
 		default:
 			v.err = fmt.Errorf("invalid annotation rule: use 'must be annotated with' or 'must not be annotated with'")
 		}
@@ -576,66 +577,66 @@ func (v *irVisitor) visitVerbPhrase(ctx parser.IVerbPhraseContext, mod modality,
 		for _, tctx := range c.AllTargetExpr() {
 			target := v.visitTargetExpr(tctx)
 			if target != nil {
-				rule.Targets = append(rule.Targets, target)
+				ir.Targets = append(ir.Targets, target)
 			}
 		}
 		if mod != modalityMustOnly {
 			v.err = fmt.Errorf("accessed by rule requires 'must only' modality")
 			return
 		}
-		rule.Kind = RuleKind_RULE_ACCESSED_BY
+		ir.Kind = rule.RuleKind_RULE_ACCESSED_BY
 
 	case *parser.AcyclicPhraseContext:
 		if mod != modalityMust {
 			v.err = fmt.Errorf("acyclic rule requires 'must' modality (not 'must not' or 'must only')")
 			return
 		}
-		rule.Kind = RuleKind_RULE_ACYCLIC
+		ir.Kind = rule.RuleKind_RULE_ACYCLIC
 
 	case *parser.InPhraseContext:
 		target := v.visitTargetExpr(c.TargetExpr())
 		if target != nil {
-			rule.Targets = append(rule.Targets, target)
+			ir.Targets = append(ir.Targets, target)
 		}
 		switch mod {
 		case modalityMust:
-			rule.Kind = RuleKind_RULE_IN
+			ir.Kind = rule.RuleKind_RULE_IN
 		case modalityMustNot:
-			rule.Kind = RuleKind_RULE_NOT_IN
+			ir.Kind = rule.RuleKind_RULE_NOT_IN
 		default:
 			v.err = fmt.Errorf("location rule: use 'must be in' or 'must not be in'")
 		}
 
 	case *parser.MatchPhraseContext:
 		pattern := unquote(c.STRING().GetText())
-		rule.Targets = append(rule.Targets, &TargetRefIR{
+		ir.Targets = append(ir.Targets, &rule.TargetRefIR{
 			Value:    pattern,
 			IsInline: true,
 		})
 		switch mod {
 		case modalityMust:
-			rule.Kind = RuleKind_RULE_MATCH
+			ir.Kind = rule.RuleKind_RULE_MATCH
 		case modalityMustNot:
-			rule.Kind = RuleKind_RULE_NOT_MATCH
+			ir.Kind = rule.RuleKind_RULE_NOT_MATCH
 		default:
 			v.err = fmt.Errorf("naming pattern rule: use 'must match' or 'must not match'")
 		}
 
 	case *parser.VisibilityPhraseContext:
 		if mod != modalityMust {
-			v.err = fmt.Errorf("visibility rule requires 'must' modality")
+			v.err = fmt.Errorf("Visibility rule requires 'must' modality")
 			return
 		}
-		rule.Kind = RuleKind_RULE_VISIBILITY
+		ir.Kind = rule.RuleKind_RULE_VISIBILITY
 		visCtx := c.Visibility()
 		if v, ok := visCtx.(*parser.VisibilityContext); ok {
 			switch {
 			case v.PUBLIC() != nil:
-				rule.Visibility = Visibility_VISIBILITY_PUBLIC
+				ir.Visibility = rule.Visibility_VISIBILITY_PUBLIC
 			case v.INTERNAL() != nil:
-				rule.Visibility = Visibility_VISIBILITY_INTERNAL
+				ir.Visibility = rule.Visibility_VISIBILITY_INTERNAL
 			case v.PRIVATE() != nil:
-				rule.Visibility = Visibility_VISIBILITY_PRIVATE
+				ir.Visibility = rule.Visibility_VISIBILITY_PRIVATE
 			}
 		}
 
@@ -644,70 +645,70 @@ func (v *irVisitor) visitVerbPhrase(ctx parser.IVerbPhraseContext, mod modality,
 			v.err = fmt.Errorf("type constraint rule requires 'must' modality")
 			return
 		}
-		rule.Kind = RuleKind_RULE_TYPE_CONSTRAINT
+		ir.Kind = rule.RuleKind_RULE_TYPE_CONSTRAINT
 		tcCtx := c.TypeConstraint()
 		if tc, ok := tcCtx.(*parser.TypeConstraintContext); ok {
 			switch {
 			case tc.ABSTRACT() != nil:
-				rule.TypeConstraint = TypeConstraint_TYPE_CONSTRAINT_ABSTRACT
+				ir.TypeConstraint = rule.TypeConstraint_TYPE_CONSTRAINT_ABSTRACT
 			case tc.SEALED() != nil:
-				rule.TypeConstraint = TypeConstraint_TYPE_CONSTRAINT_SEALED
+				ir.TypeConstraint = rule.TypeConstraint_TYPE_CONSTRAINT_SEALED
 			case tc.STATIC() != nil:
-				rule.TypeConstraint = TypeConstraint_TYPE_CONSTRAINT_STATIC
+				ir.TypeConstraint = rule.TypeConstraint_TYPE_CONSTRAINT_STATIC
 			}
 		}
 	}
 }
 
 // visitExcludeStmt processes an exclude statement
-func (v *irVisitor) visitExcludeStmt(ctx parser.IExcludeStmtContext) *ExclusionIR {
+func (v *irVisitor) visitExcludeStmt(ctx parser.IExcludeStmtContext) *rule.ExclusionIR {
 	if ctx == nil {
 		return nil
 	}
 
 	switch c := ctx.(type) {
 	case *parser.ExcludeClassContext:
-		return &ExclusionIR{
-			Kind:  ExcludeKind_EXCLUDE_CLASS,
+		return &rule.ExclusionIR{
+			Kind:  rule.ExcludeKind_EXCLUDE_CLASS,
 			Value: unquote(c.STRING().GetText()),
 		}
 	case *parser.ExcludeClassImplementingContext:
-		return &ExclusionIR{
-			Kind:  ExcludeKind_EXCLUDE_IMPLEMENT_INTERFACE,
+		return &rule.ExclusionIR{
+			Kind:  rule.ExcludeKind_EXCLUDE_IMPLEMENT_INTERFACE,
 			Value: unquote(c.STRING().GetText()),
 		}
 	case *parser.ExcludeComponentContext:
-		return &ExclusionIR{
-			Kind:  ExcludeKind_EXCLUDE_COMPONENT,
+		return &rule.ExclusionIR{
+			Kind:  rule.ExcludeKind_EXCLUDE_COMPONENT,
 			Value: unquote(c.STRING().GetText()),
 		}
 	case *parser.ExcludePatternContext:
-		return &ExclusionIR{
-			Kind:  ExcludeKind_EXCLUDE_CLASS,
+		return &rule.ExclusionIR{
+			Kind:  rule.ExcludeKind_EXCLUDE_CLASS,
 			Value: unquote(c.STRING().GetText()),
 		}
 	}
 	return nil
 }
 
-// visitSeverityStmt extracts severity value
-func (v *irVisitor) visitSeverityStmt(ctx *parser.SeverityStmtContext) Severity {
+// visitSeverityStmt extracts Severity value
+func (v *irVisitor) visitSeverityStmt(ctx *parser.SeverityStmtContext) rule.Severity {
 	if ctx == nil {
-		return Severity_SEVERITY_UNSPECIFIED
+		return rule.Severity_SEVERITY_UNSPECIFIED
 	}
 
 	svCtx := ctx.SeverityValue()
 	if svCtx == nil {
-		return Severity_SEVERITY_UNSPECIFIED
+		return rule.Severity_SEVERITY_UNSPECIFIED
 	}
 
 	switch {
 	case svCtx.ERROR() != nil:
-		return Severity_SEVERITY_ERROR
+		return rule.Severity_SEVERITY_ERROR
 	case svCtx.WARNING() != nil:
-		return Severity_SEVERITY_WARNING
+		return rule.Severity_SEVERITY_WARNING
 	}
-	return Severity_SEVERITY_UNSPECIFIED
+	return rule.Severity_SEVERITY_UNSPECIFIED
 }
 
 // ---------- Validation ----------
@@ -718,7 +719,7 @@ func (v *irVisitor) visitSeverityStmt(ctx *parser.SeverityStmtContext) Severity 
 var selectorRefRE = regexp.MustCompile(`^[A-Z][a-zA-Z0-9_]*$`)
 
 // validateIR performs semantic checks on the built IR.
-func validateIR(ir *SpecIR) error {
+func validateIR(ir *rule.SpecIR) error {
 	if ir.Adr == nil {
 		return fmt.Errorf("missing ADR declaration")
 	}
@@ -747,7 +748,7 @@ func validateIR(ir *SpecIR) error {
 
 		// Validate file vs code rule assertions
 		hasChecks := len(r.Checks) > 0
-		hasCodeAssertion := r.Kind != RuleKind_RULE_UNSPECIFIED && !hasChecks
+		hasCodeAssertion := r.Kind != rule.RuleKind_RULE_UNSPECIFIED && !hasChecks
 
 		if r.IsFileRule && hasCodeAssertion {
 			return fmt.Errorf("rule %q: code assertions (depend on, implement, etc.) cannot be used in file rules", r.Name)
@@ -757,23 +758,23 @@ func validateIR(ir *SpecIR) error {
 		}
 
 		// Code rules with subjects require validation
-		codeRulesWithSubject := []RuleKind{
-			RuleKind_RULE_DEPEND_ONLY,
-			RuleKind_RULE_NOT_DEPEND,
-			RuleKind_RULE_ANNOTATE,
-			RuleKind_RULE_NOT_ANNOTATE,
-			RuleKind_RULE_EXTEND,
-			RuleKind_RULE_NOT_EXTEND,
-			RuleKind_RULE_IMPLEMENT,
-			RuleKind_RULE_NOT_IMPLEMENT,
-			RuleKind_RULE_ACCESSED_BY,
-			RuleKind_RULE_ACYCLIC,
-			RuleKind_RULE_IN,
-			RuleKind_RULE_NOT_IN,
-			RuleKind_RULE_MATCH,
-			RuleKind_RULE_NOT_MATCH,
-			RuleKind_RULE_VISIBILITY,
-			RuleKind_RULE_TYPE_CONSTRAINT,
+		codeRulesWithSubject := []rule.RuleKind{
+			rule.RuleKind_RULE_DEPEND_ONLY,
+			rule.RuleKind_RULE_NOT_DEPEND,
+			rule.RuleKind_RULE_ANNOTATE,
+			rule.RuleKind_RULE_NOT_ANNOTATE,
+			rule.RuleKind_RULE_EXTEND,
+			rule.RuleKind_RULE_NOT_EXTEND,
+			rule.RuleKind_RULE_IMPLEMENT,
+			rule.RuleKind_RULE_NOT_IMPLEMENT,
+			rule.RuleKind_RULE_ACCESSED_BY,
+			rule.RuleKind_RULE_ACYCLIC,
+			rule.RuleKind_RULE_IN,
+			rule.RuleKind_RULE_NOT_IN,
+			rule.RuleKind_RULE_MATCH,
+			rule.RuleKind_RULE_NOT_MATCH,
+			rule.RuleKind_RULE_VISIBILITY,
+			rule.RuleKind_RULE_TYPE_CONSTRAINT,
 		}
 
 		isCodeRuleWithSubject := false

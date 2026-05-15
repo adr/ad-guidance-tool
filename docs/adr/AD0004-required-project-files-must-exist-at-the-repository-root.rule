@@ -1,0 +1,27 @@
+adr "0004" "Required project files must exist at the repository root"
+
+path "Readme"    = "README.md"
+path "License"   = "LICENSE"
+path "GoMod"     = "go.mod"
+path "Gitignore" = ".gitignore"
+
+file "readme_must_exist" {
+  Readme must exist
+  severity error
+}
+
+file "license_must_exist" {
+  License must exist
+  severity error
+}
+
+file "gomod_must_exist" {
+  GoMod must exist
+  severity error
+}
+
+file "gitignore_must_exist" {
+  Gitignore must exist
+  severity error
+}
+

@@ -1,0 +1,150 @@
+{
+  "ADR Declaration": {
+    "prefix": "adr",
+    "body": [
+      "adr \"${1:0001}\" \"${2:Title}\"",
+      "",
+      "$0"
+    ],
+    "description": "ADR header declaration"
+  },
+  "Component Selector": {
+    "prefix": "selector component",
+    "body": "component \"${1:Name}\" = \"${2:namespace.package..}\"",
+    "description": "Define a reusable component selector"
+  },
+  "Class Selector": {
+    "prefix": "selector class",
+    "body": "class \"${1:Name}\" = \"${2:ClassName}\"",
+    "description": "Define a reusable class selector"
+  },
+  "Interface Selector": {
+    "prefix": "selector interface",
+    "body": "interface \"${1:Name}\" = \"${2:InterfaceName}\"",
+    "description": "Define a reusable interface selector"
+  },
+  "Path Selector": {
+    "prefix": "selector path",
+    "body": "path \"${1:Name}\" = \"${2:path/**/*.ext}\"",
+    "description": "Define a reusable path selector"
+  },
+  "Code Rule Block": {
+    "prefix": "code",
+    "body": [
+      "code \"${1:rule_name}\" {",
+      "  $0",
+      "  severity ${2|error,warning|}",
+      "}"
+    ],
+    "description": "Create a new code rule block"
+  },
+  "File Rule Block": {
+    "prefix": "file",
+    "body": [
+      "file \"${1:rule_name}\" {",
+      "  $0",
+      "  severity ${2|error,warning|}",
+      "}"
+    ],
+    "description": "Create a new file rule block"
+  },
+  "Custom Rule Block": {
+    "prefix": "custom",
+    "body": [
+      "custom \"${1:rule_name}\" {",
+      "  $0",
+      "}"
+    ],
+    "description": "Create a new custom (opaque) rule block; the body is passed verbatim to the plugin"
+  },
+  "Severity": {
+    "prefix": "severity",
+    "body": "severity ${1|error,warning|}",
+    "description": "Set rule severity level"
+  },
+  "Must Not Depend On": {
+    "prefix": "must not depend on",
+    "body": "${1:Subject} must not depend on ${2:Target}",
+    "description": "Forbid dependencies to one or more targets (comma-separate additional targets)"
+  },
+  "Must Only Depend On": {
+    "prefix": "must only depend on",
+    "body": "${1:Subject} must only depend on ${2:Target}",
+    "description": "Allow dependencies only to specified targets (comma-separate additional targets)"
+  },
+  "Must Only Be Accessed By": {
+    "prefix": "must only be accessed by",
+    "body": "${1:Subject} must only be accessed by ${2:Target}",
+    "description": "Limit incoming dependencies to specified targets"
+  },
+  "Must Be Acyclic": {
+    "prefix": "must be acyclic",
+    "body": "${1:Subject} must be acyclic",
+    "description": "Assert no circular dependencies"
+  },
+  "Path Must Exist": {
+    "prefix": "path must exist",
+    "body": "path \"${1:path/**/*.ext}\" must exist",
+    "description": "Assert that a path must exist"
+  },
+  "Path Must Not Exist": {
+    "prefix": "path must not exist",
+    "body": "path \"${1:path/**/*.ext}\" must not exist",
+    "description": "Assert that a path must not exist"
+  },
+  "Path Must Contain": {
+    "prefix": "path must contain",
+    "body": "path \"${1:path/**/*.ext}\" must contain \"${2:text}\"",
+    "description": "Assert that a path must contain text or regex"
+  },
+  "Path Must Not Contain": {
+    "prefix": "path must not contain",
+    "body": "path \"${1:path/**/*.ext}\" must not contain \"${2:text}\"",
+    "description": "Assert that a path must not contain text or regex"
+  },
+  "Must Implement Interface": {
+    "prefix": "must implement",
+    "body": "${1:ClassSubject} must implement interface ${2:InterfaceTarget}",
+    "description": "Assert that a class must implement an interface"
+  },
+  "Must Extend Class": {
+    "prefix": "must extend",
+    "body": "${1:ClassSubject} must extend class ${2:BaseClass}",
+    "description": "Assert that a class must extend a base class"
+  },
+  "Must Be Annotated With": {
+    "prefix": "must be annotated with",
+    "body": "${1:Subject} must be annotated with \"${2:AttributeName}\"",
+    "description": "Assert that subject must have an annotation/attribute"
+  },
+  "Must Not Be Annotated With": {
+    "prefix": "must not be annotated with",
+    "body": "${1:Subject} must not be annotated with \"${2:AttributeName}\"",
+    "description": "Assert that subject must not have an annotation/attribute"
+  },
+  "Must Be In": {
+    "prefix": "must be in",
+    "body": "${1:ClassSubject} must be in ${2:Component}",
+    "description": "Assert that a class must be located in a component"
+  },
+  "Must Match Pattern": {
+    "prefix": "must match",
+    "body": "${1:Subject} must match \"regex:${2:.*Pattern}\"",
+    "description": "Assert that subject must match a naming pattern"
+  },
+  "Exclude Class Implementing": {
+    "prefix": "exclude class implementing",
+    "body": "exclude class implementing interface \"${1:IInterfaceName}\"",
+    "description": "Exclude classes implementing an interface from the rule"
+  },
+  "Exclude Class": {
+    "prefix": "exclude class",
+    "body": "exclude class \"${1:ClassName}\"",
+    "description": "Exclude a specific class from the rule"
+  },
+  "Exclude Path": {
+    "prefix": "exclude",
+    "body": "exclude \"${1:path/**/*.ext}\"",
+    "description": "Exclude paths from a file rule"
+  }
+}

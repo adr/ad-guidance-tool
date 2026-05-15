@@ -43,3 +43,4 @@ release:
     name: ad-guidance-tool
   draft: false
   prerelease: auto
+  replace_existing_artifacts: true

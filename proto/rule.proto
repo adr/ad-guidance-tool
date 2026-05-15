@@ -1,0 +1,147 @@
+syntax = "proto3";
+package rule;
+
+option go_package = "./rule";
+
+enum InvocationMode {
+  MODE_UNSPECIFIED = 0;
+  MODE_COMPILE = 1;
+  MODE_VERIFY = 2;
+}
+
+message SpecIR {
+  string output_dir = 1;
+  AdrIR adr = 2;
+  repeated SelectorIR selectors = 3;
+  repeated RuleIR rules = 4;
+  InvocationMode mode = 16;
+}
+
+message AdrIR {
+  string id = 1;
+  string title = 2;
+}
+
+enum SelectorKind {
+  SELECTOR_UNSPECIFIED = 0;
+  SELECTOR_COMPONENT = 4;
+  SELECTOR_CLASS = 5;
+  SELECTOR_INTERFACE = 6;
+  SELECTOR_PATH = 7;
+}
+
+message SelectorIR {
+  string name = 1;
+  string pattern = 2;              // package/namespace root or glob pattern
+  SelectorKind kind = 3;
+}
+
+enum RuleKind {
+  RULE_UNSPECIFIED = 0;
+  RULE_DEPEND_ONLY = 1;          // "must only depend on"
+  RULE_NOT_DEPEND = 2;           // "must not depend on"
+  RULE_ANNOTATE = 3;              // "must be annotated with"
+  RULE_NOT_ANNOTATE = 4;          // "must not be annotated with"
+  RULE_EXTEND = 5;                // "must extend class"
+  RULE_NOT_EXTEND = 6;            // "must not extend class"
+  RULE_IMPLEMENT = 7;             // "must implement interface"
+  RULE_NOT_IMPLEMENT = 8;         // "must not implement interface"
+  RULE_ACCESSED_BY = 9;          // "must only be accessed by"
+  RULE_ACYCLIC = 10;              // "must be acyclic"
+  RULE_IN = 11;                  // "must be in"
+  RULE_NOT_IN = 12;              // "must not be in"
+  RULE_MATCH = 13;               // "must match"
+  RULE_NOT_MATCH = 14;           // "must not match"
+  RULE_VISIBILITY = 15;           // "must be public/internal/private"
+  RULE_TYPE_CONSTRAINT = 16;      // "must be abstract/sealed/static"
+}
+
+enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0;
+  VISIBILITY_PUBLIC = 1;
+  VISIBILITY_INTERNAL = 2;
+  VISIBILITY_PRIVATE = 3;
+}
+
+enum TypeConstraint {
+  TYPE_CONSTRAINT_UNSPECIFIED = 0;
+  TYPE_CONSTRAINT_ABSTRACT = 1;
+  TYPE_CONSTRAINT_SEALED = 2;
+  TYPE_CONSTRAINT_STATIC = 3;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_WARNING = 2;
+  SEVERITY_ERROR = 3;
+}
+
+enum ExcludeKind {
+  EXCLUDE_UNSPECIFIED = 0;
+  EXCLUDE_CLASS = 4;
+  EXCLUDE_IMPLEMENT_INTERFACE = 3;
+  EXCLUDE_COMPONENT = 5;
+}
+
+message ExclusionIR {
+  ExcludeKind kind = 1;
+  string value = 2;
+}
+
+// TargetRefIR represents a subject or target in a rule
+// Can be a selector reference or an inline pattern
+message TargetRefIR {
+  string value = 1;         // selector name or pattern string
+  bool is_inline = 2;       // true if inline pattern (not a selector reference)
+  SelectorKind type = 3;    // type for inline patterns only
+  bool is_match = 4;        // true if "match" pattern (regex)
+  TargetRefIR scope = 5;    // optional "in" scope (subset relation)
+}
+
+message RuleIR {
+  string name = 1;
+  RuleKind kind = 2;
+
+  // Subject of the rule (was "from" in old syntax)
+  TargetRefIR from = 8;
+  
+  // Targets (dependencies, interface, etc.)
+  repeated TargetRefIR targets = 9;
+
+  Severity severity = 5;
+  repeated ExclusionIR excludes = 6;
+
+  // Scanner checks within a rule block
+  repeated CheckIR checks = 7;
+
+  // For visibility rules
+  Visibility visibility = 10;
+
+  // For type constraint rules
+  TypeConstraint type_constraint = 11;
+
+  // Rule category: true for file rules, false for code rules
+  bool is_file_rule = 12;
+
+  // Custom rule fields (opaque block; body is forwarded to the plugin unchanged)
+  bool is_custom_rule = 13;
+  string raw_body = 15;
+}
+
+enum CheckKind {
+  CHECK_UNSPECIFIED = 0;
+  CHECK_FS_MUST_EXIST = 1;
+  CHECK_FS_MUST_NOT_EXIST = 2;
+  CHECK_FS_MUST_CONTAIN = 3;
+  CHECK_FS_MUST_NOT_CONTAIN = 4;
+}
+
+message CheckIR {
+  CheckKind kind = 1;
+
+  // Path pattern (now string literals without "glob:" prefix)
+  string path = 2;
+
+  // For *contain* checks: literal string or "regex:..." pattern
+  string pattern = 3;
+}

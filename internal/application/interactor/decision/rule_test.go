@@ -1,13 +1,14 @@
 package decision
 
 import (
-	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
-	out_mocks "github.com/adr/ad-guidance-tool/mocks/outputport"
-	svc_mocks "github.com/adr/ad-guidance-tool/mocks/service"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+
+	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
+	out_mocks "github.com/adr/ad-guidance-tool/mocks/outputport"
+	svc_mocks "github.com/adr/ad-guidance-tool/mocks/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -101,8 +102,8 @@ func TestRule_WithCustomOutputPath(t *testing.T) {
 	content, err := os.ReadFile(customOutput)
 	assert.NoError(t, err)
 	assert.Contains(t, string(content), `adr "0001" "test-decision"`)
-	assert.Contains(t, string(content), "# add your rules here")
-	assert.Contains(t, string(content), `rule "rule_name"`)
+	assert.Contains(t, string(content), `code "rule_name"`)
+	assert.Contains(t, string(content), `file "rule_name"`)
 }
 
 func TestRule_WithCustomOutputDirectory(t *testing.T) {
@@ -214,7 +215,7 @@ func TestRule_TemplateGeneration(t *testing.T) {
 	content := generateRuleTemplate(id, title)
 
 	assert.Contains(t, content, `adr "0001" "test-decision"`)
-	assert.Contains(t, content, "# add your rules here")
-	assert.Contains(t, content, `rule "rule_name" {`)
+	assert.Contains(t, content, `code "rule_name"`)
+	assert.Contains(t, content, `file "rule_name"`)
 	assert.Contains(t, content, "severity error")
 }

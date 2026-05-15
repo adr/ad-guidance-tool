@@ -33,8 +33,8 @@ Unlike 'enforce compile', which generates test code for later execution, 'enforc
 runs assertions immediately using the plugin and exits non-zero if any rule is violated.
 
 Examples:
-  ade enforce verify -i docs/0003.rule -p filecheck
-  ade enforce verify -i docs/ -p filecheck -r ./src`,
+  adg enforce verify -i docs/0003.rule -p filecheck
+  adg enforce verify -i docs/ -p filecheck -r ./src`,
 	Run: enforceVerifyCommand,
 }
 
@@ -72,9 +72,14 @@ func enforceVerifyCommand(cmd *cobra.Command, args []string) {
 
 	domain.CheckFatalError(shared.ValidatePluginMode(plugin, "verify"), "validating plugin mode")
 
-	verifyapp.Verify(verifyapp.VerifyInfo{
-		InputFile:  input,
-		PluginName: plugin,
-		RootDir:    root,
-	})
+	ruleFiles, err := collectRuleFilePaths(input)
+	domain.CheckFatalError(err, "resolving input path")
+
+	for _, f := range ruleFiles {
+		verifyapp.Verify(verifyapp.VerifyInfo{
+			InputFile:  f,
+			PluginName: plugin,
+			RootDir:    root,
+		})
+	}
 }

@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/adr/ad-guidance-tool/internal/ade/domain"
 	"github.com/adr/ad-guidance-tool/internal/ade/pluginstore"
+	"github.com/spf13/cobra"
 )
 
 var updateCmd = &cobra.Command{
 	Use:   "update <name>",
 	Short: "Re-fetch the latest release for a remotely installed plugin.",
 	Long: `Download the latest GitHub release for a plugin that was previously installed
-with 'ade install github.com/owner/repo' and overwrite the existing binary.
+with 'adg enforce plugin install <name> --repo github.com/owner/repo' and overwrite the existing binary.
 
-  ade plugin update filecheck
+  adg enforce plugin update filecheck
 
 Plugins installed with --path (local mode) cannot be updated this way because
-no remote source was recorded. Re-run 'ade install <name> --path <new-path>'
+no remote source was recorded. Re-run 'adg enforce plugin install <name> --path <new-path>'
 to replace a locally installed plugin.
 
 Authentication
@@ -42,7 +42,7 @@ func updateCommand(cmd *cobra.Command, args []string) {
 
 	binaryPath, registered := plugins[name]
 	if !registered {
-		fmt.Fprintf(os.Stderr, "plugin %q is not registered; run 'ade install' first\n", name)
+		fmt.Fprintf(os.Stderr, "plugin %q is not registered; run 'adg enforce plugin install' first\n", name)
 		os.Exit(1)
 	}
 
@@ -50,7 +50,7 @@ func updateCommand(cmd *cobra.Command, args []string) {
 	if source == "" {
 		fmt.Fprintf(os.Stderr,
 			"plugin %q was installed locally (no remote source recorded); "+
-				"use 'ade install %s --path <new-path>' to update it\n", name, name)
+				"use 'adg enforce plugin install %s --path <new-path>' to update it\n", name, name)
 		os.Exit(1)
 	}
 
