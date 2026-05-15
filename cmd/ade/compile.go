@@ -80,6 +80,10 @@ func enforceCompileCommand(cmd *cobra.Command, args []string) {
 
 	domain.CheckFatalError(shared.ValidatePluginMode(plugin, "compile"), "validating plugin mode")
 
+	if err := os.MkdirAll(output, 0o755); err != nil {
+		domain.CheckFatalError(err, "creating output directory")
+	}
+
 	ruleFiles, err := collectRuleFilePaths(input)
 	domain.CheckFatalError(err, "resolving input path")
 
