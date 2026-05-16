@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+
 	"github.com/adr/ad-guidance-tool/cmd"
 )
 

@@ -18,7 +18,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Build adg
-        run: go build -o adg .
+        run: go build -o adg ./adg
 
       - name: Install arch-go plugin
         run: ./adg enforce plugin install arch-go --repo github.com/phi42/ad-plugin-arch-go
