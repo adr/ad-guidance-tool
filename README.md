@@ -78,19 +78,19 @@ Use "adg [command] --help" for more information about a command.
 
 ### Shell auto-completion
 
-To enhance your workflow, ADG supports shell auto-completion. Generate a script with:
+ADG supports shell auto-completion for `bash`, `fish`, `powershell`, and `zsh`. Run the completion command with `--help` to see the installation instructions for your shell:
 
 ```bash
-adg completion [shell]
+adg completion powershell --help
 ```
 
-For example, to enable auto-completion in PowerShell:
+For example, to enable auto-completion in PowerShell, add the following line to your [PowerShell profile](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-7.5):
 
-```bash
-adg completion powershell
+```powershell
+adg completion powershell | Out-String | Invoke-Expression
 ```
 
-Copy the output into your [PowerShell profile](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-7.5) to enable completions. Follow a similar process for other shells (available: `bash`, `fish`, `powershell`, `zsh`).
+Other shells follow the same pattern: run `adg completion <shell> --help` for the shell-specific instructions.
 
 ## User Guide
 
