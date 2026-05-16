@@ -18,23 +18,23 @@ jobs:
           go-version-file: go.mod
 
       - name: Build adg
-        run: go build -o adg ./adg
+        run: go build -o bin/adg ./adg
 
       - name: Install arch-go plugin
-        run: ./adg enforce plugin install arch-go --repo github.com/phi42/ad-plugin-arch-go
+        run: ./bin/adg enforce plugin install arch-go --repo github.com/phi42/ad-plugin-arch-go
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install fscheck plugin
-        run: ./adg enforce plugin install fscheck --repo github.com/phi42/ad-plugin-FScheck
+        run: ./bin/adg enforce plugin install fscheck --repo github.com/phi42/ad-plugin-FScheck
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compile ADR rules into architecture tests
-        run: ./adg enforce compile -i docs/adr/ -p arch-go -o archtest/
+        run: ./bin/adg enforce compile -i docs/adr/ -p arch-go -o archtest/
 
       - name: Verify file-system rules
-        run: ./adg enforce verify -i docs/adr/AD0004-required-project-files-must-exist-at-the-repository-root.rule -p fscheck
+        run: ./bin/adg enforce verify -i docs/adr/AD0004-required-project-files-must-exist-at-the-repository-root.rule -p fscheck
 
       - name: Run all tests
         run: go test ./...
