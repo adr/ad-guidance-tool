@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"adg/internal/application/outputport"
+	"fmt"
+)
 
 type ModelValidatePresenter struct{}
 
@@ -8,18 +11,19 @@ func NewModelValidatePresenter() *ModelValidatePresenter {
 	return &ModelValidatePresenter{}
 }
 
-func (p *ModelValidatePresenter) ModelValidated(modelName string, indexErr, dataErr error) {
-	if indexErr == nil {
-		fmt.Printf("%s model metadata is valid and index is up to date\n", modelName)
-
-		if dataErr == nil {
-			fmt.Printf("%s model file content is valid with correct anchors\n", modelName)
-		} else {
-			fmt.Printf("%s model file content is invalid: %s\n", modelName, dataErr)
-		}
-	} else {
-		fmt.Printf("%s model metadata is invalid: %s\n", modelName, indexErr)
+// ModelValidated prints per-decision issue reports. On a clean run nothing is
+// printed for OK decisions in this PR — that's expedient; the `--quiet` flag
+// from §C.6 lands in PR 2 where the output style is finalized. A non-empty
+// issue list still results in a non-zero command exit because the cmd layer
+// inspects the printer's "had issues" state via the returned bool — for now
+// the presenter just prints; the exit-code mapping is also a PR 2 concern.
+func (p *ModelValidatePresenter) ModelValidated(modelName string, issues []outputport.ValidationIssue) {
+	if len(issues) == 0 {
+		fmt.Printf("%s model is valid\n", modelName)
+		return
 	}
-
-	// todo: print total number of valid/invalid decisions if available
+	fmt.Printf("%s model has %d validation issue(s):\n", modelName, len(issues))
+	for _, issue := range issues {
+		fmt.Printf("  ID %s: %s\n", issue.ID, issue.Message)
+	}
 }

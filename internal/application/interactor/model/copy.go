@@ -55,9 +55,7 @@ func (i *CopyModelInteractor) Copy(modelPath, targetPath string, filters map[str
 		}
 	}
 
-	if err := i.modelService.RebuildIndex(targetPath); err != nil {
-		return fmt.Errorf("failed to rebuild index: %w", err)
-	}
+	// index.yaml is dropped in this fork; nothing to rebuild post-copy.
 
 	i.output.Copied(modelPath, targetPath, len(decisions))
 	return nil

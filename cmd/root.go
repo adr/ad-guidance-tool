@@ -21,7 +21,7 @@ var rootCmd = &cobra.Command{
 }
 
 var configSvc, err = configinfra.NewConfigService()
-var decisionRepo = decisioninfra.NewFileDecisionRepository(configSvc)
+var decisionRepo = decisioninfra.NewFileDecisionRepository()
 var modelRepo = modelinfra.NewFileModelRepository()
 var modelSvc = modeldomain.NewModelService(modelRepo, decisionRepo)
 var decisionSvc = decisiondomain.NewDecisionService(decisionRepo)

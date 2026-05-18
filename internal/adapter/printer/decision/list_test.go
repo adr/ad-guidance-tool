@@ -9,8 +9,8 @@ import (
 func TestListed_JSON(t *testing.T) {
 	presenter := NewListPresenter()
 	decisions := []decision.Decision{
-		{ID: "0002", Title: "Decision B", Status: "open"},
-		{ID: "0001", Title: "Decision A", Status: "decided"},
+		{ID: "0002", Title: "Decision B", Status: "proposed"},
+		{ID: "0001", Title: "Decision A", Status: "accepted"},
 	}
 
 	output := captureOutput(func() {
@@ -25,7 +25,7 @@ func TestListed_JSON(t *testing.T) {
 func TestListed_YAML(t *testing.T) {
 	presenter := NewListPresenter()
 	decisions := []decision.Decision{
-		{ID: "0002", Title: "Decision B", Status: "open"},
+		{ID: "0002", Title: "Decision B", Status: "proposed"},
 	}
 
 	output := captureOutput(func() {
@@ -40,20 +40,21 @@ func TestListed_YAML(t *testing.T) {
 func TestListed_Markdown(t *testing.T) {
 	presenter := NewListPresenter()
 	decisions := []decision.Decision{
-		{ID: "0001", Title: "Decision A", Status: "open", Tags: []string{"tag1"}, Links: decision.Links{
-			Precedes: []string{"0002"},
-			Succeeds: []string{"0003"},
-			Custom: map[string][]string{
+		{
+			ID: "0001", Title: "Decision A", Status: "proposed",
+			Tags:       []string{"tag1"},
+			Supersedes: []string{"0002"},
+			Links: map[string][]string{
 				"related": {"0004"},
 			},
-		}},
+		},
 	}
 
 	output := captureOutput(func() {
 		presenter.Listed(decisions, "md")
 	})
 
-	if !strings.Contains(output, "### 0001 - Decision A") || !strings.Contains(output, "- **Precedes:** 0002") || !strings.Contains(output, "**Related:** 0004") {
+	if !strings.Contains(output, "### 0001 - Decision A") || !strings.Contains(output, "- **Supersedes:** 0002") || !strings.Contains(output, "**Related:** 0004") {
 		t.Errorf("Markdown output missing expected content:\n%s", output)
 	}
 }
@@ -61,14 +62,14 @@ func TestListed_Markdown(t *testing.T) {
 func TestListed_Simple(t *testing.T) {
 	presenter := NewListPresenter()
 	decisions := []decision.Decision{
-		{ID: "0001", Title: "Simple Decision", Status: "open", Tags: []string{"alpha", "beta"}},
+		{ID: "0001", Title: "Simple Decision", Status: "proposed", Tags: []string{"alpha", "beta"}},
 	}
 
 	output := captureOutput(func() {
 		presenter.Listed(decisions, "simple")
 	})
 
-	if !strings.Contains(output, "0001 [open] - Simple Decision : [alpha beta]") {
+	if !strings.Contains(output, "0001 [proposed] - Simple Decision : [alpha beta]") {
 		t.Errorf("Simple output format incorrect:\n%s", output)
 	}
 }

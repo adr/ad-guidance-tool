@@ -14,7 +14,7 @@ func init() {
 		cmd.NewEditCommand(interactor.NewEditDecisionInteractor(decisionSvc, print.NewEditPresenter()), configSvc),
 		cmd.NewLinkCommand(interactor.NewLinkDecisionsInteractor(decisionSvc, print.NewLinkPresenter()), configSvc),
 		cmd.NewListCommand(interactor.NewListDecisionsInteractor(decisionSvc, print.NewListPresenter()), configSvc),
-		cmd.NewPrintCommand(interactor.NewPrintDecisionsInteractor(decisionSvc, print.NewPrintPresenter(configSvc)), configSvc),
+		cmd.NewPrintCommand(interactor.NewPrintDecisionsInteractor(decisionSvc, print.NewPrintPresenter()), configSvc),
 		cmd.NewReviseCommand(interactor.NewReviseDecisionInteractor(decisionSvc, print.NewRevisePresenter()), configSvc),
 		cmd.NewTagCommand(interactor.NewTagDecisionInteractor(decisionSvc, print.NewTagPresenter()), configSvc),
 	)

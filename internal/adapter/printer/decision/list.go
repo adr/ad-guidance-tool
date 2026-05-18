@@ -85,14 +85,11 @@ func (p *ListDecisionsPresenter) renderMarkdown(decisions []domain.Decision) str
 			sb.WriteString(fmt.Sprintf("- **Tags:** %s\n", strings.Join(d.Tags, ", ")))
 			sb.WriteString("\n")
 		}
-		if len(d.Links.Precedes) > 0 {
-			sb.WriteString(fmt.Sprintf("- **Precedes:** %s\n", strings.Join(d.Links.Precedes, ", ")))
+		if len(d.Supersedes) > 0 {
+			sb.WriteString(fmt.Sprintf("- **Supersedes:** %s\n", strings.Join(d.Supersedes, ", ")))
 		}
-		if len(d.Links.Succeeds) > 0 {
-			sb.WriteString(fmt.Sprintf("- **Succeeds:** %s\n", strings.Join(d.Links.Succeeds, ", ")))
-		}
-		if len(d.Links.Custom) > 0 {
-			for tag, targets := range d.Links.Custom {
+		if len(d.Links) > 0 {
+			for tag, targets := range d.Links {
 				sb.WriteString(fmt.Sprintf("- **%s:** %s\n", strings.Title(tag), strings.Join(targets, ", ")))
 			}
 		}

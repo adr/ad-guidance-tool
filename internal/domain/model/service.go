@@ -1,20 +1,27 @@
 package model
 
 import (
-	"adg/internal/domain"
 	decisiondomain "adg/internal/domain/decision"
+	"adg/internal/domain/decision/madr"
 	"fmt"
-	"reflect"
+	"regexp"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 type ModelService interface {
 	CreateModel(modelPath string) error
-	RebuildIndex(modelPath string) error
 	Exists(modelPath string) bool
-	ValidateIndexDataCorrectness(modelPath string) error
-	ValidateDecisionDataCorrectness(modelPath string) error
+	Validate(modelPath string) ([]ValidationIssue, error)
+}
+
+// ValidationIssue is one finding reported by Validate. Issues are grouped by
+// decision ID for per-decision output formatting.
+type ValidationIssue struct {
+	ID      string
+	Message string
 }
 
 type ModelServiceImplementation struct {
@@ -30,174 +37,140 @@ func NewModelService(modelRepo ModelRepository, decisionRepo decisiondomain.Deci
 }
 
 func (s *ModelServiceImplementation) CreateModel(modelPath string) error {
-	if err := s.modelRepo.CreateModel(modelPath); err != nil {
-		return err
-	}
-	return s.modelRepo.CreateIndex(modelPath)
-}
-
-func (s *ModelServiceImplementation) RebuildIndex(modelPath string) error {
-	decisions, err := s.decisionRepo.LoadAllByData(modelPath)
-	if err != nil {
-		return fmt.Errorf("failed to load decisions: %w", err)
-	}
-
-	// check for duplicate decision IDs
-	seen := make(map[string]bool)
-	for _, d := range decisions {
-		if seen[d.ID] {
-			return fmt.Errorf("cannot rebuild index, duplicate decision ID %s detected in directory or sub directories", d.ID)
-		}
-		seen[d.ID] = true
-	}
-
-	return s.modelRepo.RebuildIndex(modelPath, decisions)
+	return s.modelRepo.CreateModel(modelPath)
 }
 
 func (s *ModelServiceImplementation) Exists(modelPath string) bool {
 	return s.modelRepo.Exists(modelPath)
 }
 
-func (s *ModelServiceImplementation) ValidateIndexDataCorrectness(modelPath string) error {
-	dataDecisions, err := s.decisionRepo.LoadAllByData(modelPath)
+var (
+	statusRe     = regexp.MustCompile(`^(proposed|rejected|accepted|deprecated|superseded by ADR-[0-9]{4})$`)
+	supersededRe = regexp.MustCompile(`^superseded by ADR-([0-9]{4})$`)
+	idRe         = regexp.MustCompile(`^[0-9]{4}$`)
+)
+
+// Validate runs MADR-shape and ADG-extension integrity checks across every ADR
+// in the model directory. Each check produces zero or more issues; a non-empty
+// result indicates failures (the caller decides exit code).
+//
+// Rules (per the design spec, §3 — File Format & Data Model):
+//
+//   1. Filename matches NNNN-slug.md (enforced by repo.LoadAll already, but
+//      defended here).
+//   2. H1 title present and non-empty.
+//   3. Required H2 sections present: Context and Problem Statement,
+//      Considered Options, Decision Outcome.
+//   4. Considered Options has at least one bullet.
+//   5. When status is "accepted" and legacy-outcome is false: Decision Outcome
+//      contains `Chosen option: "X"` and X matches a bullet in Considered Options.
+//   6. Status is exactly one of the MADR vocabulary entries.
+//   7. Supersession forward integrity: if status is "superseded by ADR-X",
+//      then ADR-X exists AND has <self> in its supersedes list.
+//   8. Supersession reverse integrity: every supersedes entry points to an
+//      existing ADR whose status references <self>.
+//   9. Comment text non-empty and not solely numeric (defends against §A.1
+//      regression).
+func (s *ModelServiceImplementation) Validate(modelPath string) ([]ValidationIssue, error) {
+	decisions, err := s.decisionRepo.LoadAll(modelPath)
 	if err != nil {
-		return fmt.Errorf("failed to load decisions from files: %w", err)
-	}
-
-	if dupID, ok := findDuplicateID(dataDecisions); ok {
-		return fmt.Errorf("duplicate decision ID found: %s", dupID)
-	}
-
-	indexDecisions, err := s.decisionRepo.LoadAllByIndex(modelPath)
-	if err != nil {
-		return fmt.Errorf("failed to load decisions from index: %w (run 'rebuild' to recreate the index file)", err)
-	}
-
-	dataMap := indexByID(dataDecisions)
-	indexMap := indexByID(indexDecisions)
-
-	allIDs := uniqueKeys(dataMap, indexMap)
-	var errorsFound bool
-
-	for _, id := range allIDs {
-		data, inData := dataMap[id]
-		index, inIndex := indexMap[id]
-
-		switch {
-		case !inData:
-			fmt.Printf("ID %s exists in index but not in data (recreate the decision or fix the metadata)\n", id)
-			errorsFound = true
-		case !inIndex:
-			fmt.Printf("ID %s exists in data but not in index (run 'rebuild' to update index file)\n", id)
-			errorsFound = true
-		case !metadataEqual(data, index):
-			fmt.Printf("ID %s metadata mismatch between file and index (run 'rebuild' to update index file)\n", id)
-			errorsFound = true
-		default:
-			fmt.Printf("ID %s metadata is consistent with index\n", id)
-		}
-	}
-
-	if errorsFound {
-		return fmt.Errorf("validation of metadata completed with mismatches")
-	}
-
-	return nil
-}
-
-func (s *ModelServiceImplementation) ValidateDecisionDataCorrectness(modelPath string) error {
-	decisions, err := s.decisionRepo.LoadAllByIndex(modelPath)
-	if err != nil {
-		return fmt.Errorf("failed to load decisions from index: %w", err)
+		return nil, err
 	}
 
 	sort.Slice(decisions, func(i, j int) bool {
 		return decisions[i].ID < decisions[j].ID
 	})
 
-	var errorsFound bool
-
+	byID := map[string]decisiondomain.Decision{}
 	for _, d := range decisions {
-		content, err := s.decisionRepo.LoadDecisionContentRaw(modelPath, d.ID)
-		if err != nil {
-			return fmt.Errorf("failed to load decision content from files: %w", err)
-		}
-
-		missing := validateRequiredAnchors(content)
-		if len(missing) > 0 {
-			errorsFound = true
-			for _, tag := range missing {
-				fmt.Printf("ID %s is missing required tag: %s\n", d.ID, tag)
-			}
-		} else {
-			fmt.Printf("ID %s has valid section tags\n", d.ID)
-		}
+		byID[d.ID] = d
 	}
 
-	if errorsFound {
-		return fmt.Errorf("validation of file contents completed with errors")
-	}
-
-	return nil
-}
-
-// Helper methods
-func findDuplicateID(decisions []decisiondomain.Decision) (string, bool) {
-	seen := make(map[string]bool)
+	var issues []ValidationIssue
 	for _, d := range decisions {
-		if seen[d.ID] {
-			return d.ID, true
-		}
-		seen[d.ID] = true
+		issues = append(issues, s.validateDecision(modelPath, d, byID)...)
 	}
-	return "", false
+	return issues, nil
 }
 
-func indexByID(decisions []decisiondomain.Decision) map[string]decisiondomain.Decision {
-	m := make(map[string]decisiondomain.Decision)
-	for _, d := range decisions {
-		m[d.ID] = d
-	}
-	return m
-}
+func (s *ModelServiceImplementation) validateDecision(modelPath string, d decisiondomain.Decision, byID map[string]decisiondomain.Decision) []ValidationIssue {
+	var issues []ValidationIssue
+	add := func(msg string) { issues = append(issues, ValidationIssue{ID: d.ID, Message: msg}) }
 
-func uniqueKeys(m1, m2 map[string]decisiondomain.Decision) []string {
-	keys := make(map[string]struct{})
-	for k := range m1 {
-		keys[k] = struct{}{}
-	}
-	for k := range m2 {
-		keys[k] = struct{}{}
-	}
-	all := make([]string, 0, len(keys))
-	for k := range keys {
-		all = append(all, k)
-	}
-	sort.Strings(all)
-	return all
-}
-
-func metadataEqual(a, b decisiondomain.Decision) bool {
-	return a.ID == b.ID &&
-		a.Title == b.Title &&
-		a.Status == b.Status &&
-		reflect.DeepEqual(a.Tags, b.Tags) &&
-		reflect.DeepEqual(a.Links, b.Links) &&
-		reflect.DeepEqual(a.Comments, b.Comments)
-}
-
-func validateRequiredAnchors(content string) []string {
-	required := []string{
-		domain.AnchorForSection(domain.AnchorSectionQuestion),
-		domain.AnchorForSection(domain.AnchorSectionOptions),
-		domain.AnchorForSection(domain.AnchorSectionCriteria),
+	if !idRe.MatchString(d.ID) {
+		add("filename does not match NNNN-slug.md")
 	}
 
-	var missing []string
-	for _, anchor := range required {
-		if !strings.Contains(content, anchor) {
-			missing = append(missing, anchor)
+	if strings.TrimSpace(d.Title) == "" {
+		add("H1 title is missing or empty")
+	}
+
+	body, err := s.decisionRepo.LoadBody(modelPath, d.ID)
+	if err != nil {
+		add(fmt.Sprintf("failed to load body: %v", err))
+		return issues
+	}
+	parsed, err := madr.ParseBody(body)
+	if err != nil {
+		add(fmt.Sprintf("failed to parse body: %v", err))
+		return issues
+	}
+
+	if _, ok := parsed.Sections["context"]; !ok {
+		add("missing required section: Context and Problem Statement")
+	}
+	if _, ok := parsed.Sections["options"]; !ok {
+		add("missing required section: Considered Options")
+	} else if len(parsed.Options) == 0 {
+		add("Considered Options section has no bullets")
+	}
+	if _, ok := parsed.Sections["outcome"]; !ok {
+		add("missing required section: Decision Outcome")
+	}
+
+	if d.Status == "accepted" && !d.LegacyOutcome {
+		if parsed.ChosenOption == "" {
+			add(`Decision Outcome must contain Chosen option: "..." when status is accepted`)
+		} else if !slices.Contains(parsed.Options, parsed.ChosenOption) {
+			add(fmt.Sprintf("chosen option %q is not in Considered Options", parsed.ChosenOption))
 		}
 	}
-	return missing
+
+	if d.Status != "" && !statusRe.MatchString(d.Status) {
+		add(fmt.Sprintf("status %q is not valid MADR vocabulary", d.Status))
+	}
+
+	if m := supersededRe.FindStringSubmatch(d.Status); m != nil {
+		successorID := m[1]
+		successor, ok := byID[successorID]
+		if !ok {
+			add(fmt.Sprintf("status references ADR-%s but no such ADR exists", successorID))
+		} else if !slices.Contains(successor.Supersedes, d.ID) {
+			add(fmt.Sprintf("ADR-%s status says it supersedes us, but its supersedes list does not include %s", successorID, d.ID))
+		}
+	}
+
+	for _, predID := range d.Supersedes {
+		pred, ok := byID[predID]
+		if !ok {
+			add(fmt.Sprintf("supersedes %s but no such ADR exists", predID))
+			continue
+		}
+		expected := fmt.Sprintf("superseded by ADR-%s", d.ID)
+		if pred.Status != expected {
+			add(fmt.Sprintf("supersedes %s but ADR-%s status is %q, not %q", predID, predID, pred.Status, expected))
+		}
+	}
+
+	for i, c := range d.Comments {
+		if strings.TrimSpace(c.Text) == "" {
+			add(fmt.Sprintf("comment %d has empty text", i+1))
+			continue
+		}
+		if _, err := strconv.Atoi(strings.TrimSpace(c.Text)); err == nil {
+			add(fmt.Sprintf("comment %d has placeholder text %q; run adg migrate to recover", i+1, c.Text))
+		}
+	}
+
+	return issues
 }

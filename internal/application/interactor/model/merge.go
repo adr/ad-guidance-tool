@@ -57,9 +57,7 @@ func (i *MergeModelsInteractor) Merge(modelAPath, modelBPath, targetPath string,
 		return fmt.Errorf("failed to merge decisions from model %q: %w", modelBPath, err)
 	}
 
-	if err := i.modelService.RebuildIndex(targetPath); err != nil {
-		return fmt.Errorf("failed to rebuild index: %w", err)
-	}
+	// index.yaml is dropped in this fork; nothing to rebuild post-merge.
 
 	i.output.Merged(modelAPath, modelBPath, targetPath, amountA+amountB)
 	return nil
@@ -84,12 +82,12 @@ func (i *MergeModelsInteractor) copyDecisions(fromModel, toModel string, filters
 	})
 
 	for _, d := range decisions {
-		content, err := i.decisionService.GetDecisionContent(fromModel, d.ID)
+		body, err := i.decisionService.GetBody(fromModel, d.ID)
 		if err != nil {
-			return 0, fmt.Errorf("failed to load decision content from %q: %w", fromModel, err)
+			return 0, fmt.Errorf("failed to load decision body from %q: %w", fromModel, err)
 		}
 
-		if _, err := i.decisionService.AddExisting(fromModel, toModel, &d, content, increment); err != nil {
+		if _, err := i.decisionService.AddExisting(fromModel, toModel, &d, body, increment); err != nil {
 			return 0, fmt.Errorf("failed to add decision from %q: %w", fromModel, err)
 		}
 	}

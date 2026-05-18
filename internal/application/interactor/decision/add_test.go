@@ -41,7 +41,7 @@ func TestAdd_AllSuccess(t *testing.T) {
 	mockModelSvc.On("Exists", modelPath).Return(true)
 	mockDecisionSvc.On("AddNew", modelPath, "Decision A").Return(&decisiondomain.Decision{Title: "Decision A"}, nil)
 	mockDecisionSvc.On("AddNew", modelPath, "Decision B").Return(&decisiondomain.Decision{Title: "Decision B"}, nil)
-	mockOutput.On("Added", mock.AnythingOfType("[]*decision.Decision"), mock.AnythingOfType("map[string]error")).Return()
+	mockOutput.On("Added", mock.AnythingOfType("[]*madr.Decision"), mock.AnythingOfType("map[string]error")).Return()
 
 	interactor := NewAddDecisionsInteractor(mockModelSvc, mockDecisionSvc, mockOutput)
 

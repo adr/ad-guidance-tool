@@ -1,110 +1,81 @@
 package decision
 
 import (
-	"adg/internal/domain/decision"
-	svc_mocks "adg/mocks/service"
+	"adg/internal/application/outputport"
 	"strings"
 	"testing"
 )
 
-func TestPrinted_AllSections(t *testing.T) {
-	mockConfig := new(svc_mocks.ConfigService)
-	presenter := NewPrintPresenter(mockConfig)
+const sampleBody = `# Decision Title
 
-	mockConfig.On("GetQuestionHeader").Return("## Question")
-	mockConfig.On("GetOptionsHeader").Return("## Options")
-	mockConfig.On("GetCriteriaHeader").Return("## Criteria")
-	mockConfig.On("GetOutcomeHeader").Return("## Outcome")
-	mockConfig.On("GetCommentsHeader").Return("## Comments")
+## Context and Problem Statement
 
-	contents := []decision.DecisionContent{
-		{
-			ID:       "0002",
-			Question: "How should we do it?",
-			Options:  "Option A\nOption B",
-			Criteria: "Must be easy",
-			Outcome:  "Chose Option B",
-			Comments: "Comment 1",
-		},
-		{
-			ID:       "0001",
-			Question: "What should we do?",
-			Options:  "Option A\nOption B",
-			Criteria: "Must be fast",
-			Outcome:  "Chose Option A",
-			Comments: "Comment 1",
-		},
-	}
+What should we do?
 
-	sections := map[string]bool{
-		"question": true,
-		"options":  true,
-		"criteria": true,
-		"outcome":  true,
-		"comments": true,
+## Considered Options
+
+* Option A
+* Option B
+
+## Decision Outcome
+
+Chosen option: "Option A", because reasons.
+
+## Comments
+
+### 2026-01-01 12:00:00 — Jane
+
+Looks good.
+`
+
+func TestPrinted_NoFilter_PrintsFullBody(t *testing.T) {
+	presenter := NewPrintPresenter()
+
+	bodies := []outputport.DecisionBody{
+		{ID: "0002", Body: sampleBody},
+		{ID: "0001", Body: sampleBody},
 	}
 
 	output := captureOutput(func() {
-		presenter.Printed(contents, sections)
+		presenter.Printed(bodies, nil)
 	})
 
 	for _, expected := range []string{
 		"===== Decision 0001 =====",
-		"## Question", "What should we do?",
-		"## Options", "Option A",
-		"## Criteria", "Must be fast",
-		"## Outcome", "Chose Option A",
-		"## Comments", "Comment 1",
 		"===== Decision 0002 =====",
-		"## Question", "How should we do it?",
-		"## Options", "Option A",
-		"## Criteria", "Must be easy",
-		"## Outcome", "Chose Option B",
-		"## Comments", "Comment 1",
+		"## Context and Problem Statement",
+		"## Considered Options",
+		"## Decision Outcome",
 	} {
 		if !strings.Contains(output, expected) {
-			t.Errorf("Expected output to contain: %q", expected)
+			t.Errorf("expected output to contain %q\n%s", expected, output)
 		}
+	}
+
+	// IDs should be sorted ascending.
+	if strings.Index(output, "Decision 0001") > strings.Index(output, "Decision 0002") {
+		t.Errorf("expected 0001 to print before 0002:\n%s", output)
 	}
 }
 
-func TestPrinted_PartialSections(t *testing.T) {
-	mockConfig := new(svc_mocks.ConfigService)
-	presenter := NewPrintPresenter(mockConfig)
+func TestPrinted_FiltersBySection(t *testing.T) {
+	presenter := NewPrintPresenter()
 
-	mockConfig.On("GetQuestionHeader").Return("## Question")
-	mockConfig.On("GetOptionsHeader").Return("## Options")
-	mockConfig.On("GetOutcomeHeader").Return("## Outcome")
-
-	contents := []decision.DecisionContent{
-		{
-			ID:       "0002",
-			Question: "Another question",
-			Options:  "",
-			Outcome:  "Outcome",
-		},
-	}
-
-	sections := map[string]bool{
-		"question": true,
-		"options":  true, // but empty
-		"outcome":  true,
+	bodies := []outputport.DecisionBody{
+		{ID: "0001", Body: sampleBody},
 	}
 
 	output := captureOutput(func() {
-		presenter.Printed(contents, sections)
+		presenter.Printed(bodies, map[string]bool{"context": true, "outcome": true})
 	})
 
-	if !strings.Contains(output, "===== Decision 0002 =====") {
-		t.Error("Expected section header for decision 0002")
+	if !strings.Contains(output, "What should we do?") {
+		t.Errorf("expected Context section, got:\n%s", output)
 	}
-	if !strings.Contains(output, "## Question") || !strings.Contains(output, "Another question") {
-		t.Error("Expected question section to be printed")
+	if !strings.Contains(output, "Chosen option:") {
+		t.Errorf("expected Outcome section, got:\n%s", output)
 	}
-	if strings.Contains(output, "## Options") {
-		t.Error("Did not expect options section to be printed (empty)")
-	}
-	if !strings.Contains(output, "## Outcome") {
-		t.Error("Expected outcome section to be printed")
+	if strings.Contains(output, "* Option A") {
+		t.Errorf("Considered Options should not be printed when filtered out:\n%s", output)
 	}
 }

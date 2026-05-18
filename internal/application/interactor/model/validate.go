@@ -22,16 +22,15 @@ func NewModelValidateInteractor(
 }
 
 func (i *ModelValidateInteractor) Validate(modelPath string) error {
-	indexErr := i.service.ValidateIndexDataCorrectness(modelPath)
-
-	// TODO: also validate that decision metadata is correct (all required fields are available)
-
-	var dataErr error
-	if indexErr == nil {
-		dataErr = i.service.ValidateDecisionDataCorrectness(modelPath)
+	issues, err := i.service.Validate(modelPath)
+	if err != nil {
+		return err
 	}
 
-	i.output.ModelValidated(modelPath, indexErr, dataErr)
-
+	out := make([]outputport.ValidationIssue, 0, len(issues))
+	for _, issue := range issues {
+		out = append(out, outputport.ValidationIssue{ID: issue.ID, Message: issue.Message})
+	}
+	i.output.ModelValidated(modelPath, out)
 	return nil
 }

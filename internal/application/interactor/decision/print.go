@@ -20,14 +20,14 @@ func NewPrintDecisionsInteractor(service domain.DecisionService, output outputpo
 }
 
 func (i *PrintDecisionsInteractor) Print(modelPath string, ids []string, titles []string, sections map[string]bool) error {
-	var contents []domain.DecisionContent
+	var bodies []outputport.DecisionBody
 
 	for _, id := range ids {
-		content, err := i.service.GetDecisionContent(modelPath, id)
+		body, err := i.service.GetBody(modelPath, id)
 		if err != nil {
-			return fmt.Errorf("failed to load content for ID %q: %w", id, err)
+			return fmt.Errorf("failed to load body for ID %q: %w", id, err)
 		}
-		contents = append(contents, *content)
+		bodies = append(bodies, outputport.DecisionBody{ID: id, Body: body})
 	}
 
 	for _, title := range titles {
@@ -35,13 +35,13 @@ func (i *PrintDecisionsInteractor) Print(modelPath string, ids []string, titles 
 		if err != nil {
 			return fmt.Errorf("failed to resolve title %q: %w", title, err)
 		}
-		content, err := i.service.GetDecisionContent(modelPath, decision.ID)
+		body, err := i.service.GetBody(modelPath, decision.ID)
 		if err != nil {
-			return fmt.Errorf("failed to load content for title %q: %w", title, err)
+			return fmt.Errorf("failed to load body for title %q: %w", title, err)
 		}
-		contents = append(contents, *content)
+		bodies = append(bodies, outputport.DecisionBody{ID: decision.ID, Body: body})
 	}
 
-	i.output.Printed(contents, sections)
+	i.output.Printed(bodies, sections)
 	return nil
 }

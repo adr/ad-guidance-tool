@@ -1,48 +1,51 @@
 package decision
 
 import (
-	"adg/internal/domain/config"
-	domain "adg/internal/domain/decision"
+	"adg/internal/application/outputport"
+	"adg/internal/domain/decision/madr"
 
 	"fmt"
 	"sort"
 )
 
-type PrintDecisionsPresenter struct {
-	config config.ConfigService
+// PrintDecisionsPresenter renders ADR bodies for the `adg view` command.
+// The section names below are MADR canonical (no more configurable headers);
+// in PR 1b this printer accepts pre-loaded body text and uses madr.ParseBody to
+// pluck out individual sections when `--section` filtering is requested.
+type PrintDecisionsPresenter struct{}
+
+func NewPrintPresenter() *PrintDecisionsPresenter {
+	return &PrintDecisionsPresenter{}
 }
 
-func NewPrintPresenter(config config.ConfigService) *PrintDecisionsPresenter {
-	return &PrintDecisionsPresenter{config: config}
-}
-
-func (p *PrintDecisionsPresenter) Printed(contents []domain.DecisionContent, sections map[string]bool) {
-	sort.Slice(contents, func(i, j int) bool {
-		return contents[i].ID < contents[j].ID
+// Printed implements outputport.DecisionPrint. `sections` filters by canonical
+// MADR section key ("context", "drivers", "options", "outcome", "more", "comments").
+// An empty map prints the whole body.
+func (p *PrintDecisionsPresenter) Printed(bodies []outputport.DecisionBody, sections map[string]bool) {
+	sort.Slice(bodies, func(i, j int) bool {
+		return bodies[i].ID < bodies[j].ID
 	})
 
-	for _, d := range contents {
-		fmt.Printf("===== Decision %s =====\n\n", d.ID)
+	for _, b := range bodies {
+		fmt.Printf("===== Decision %s =====\n\n", b.ID)
 
-		if sections["question"] && d.Question != "" {
-			fmt.Println(p.config.GetQuestionHeader())
-			fmt.Println(d.Question + "\n")
+		if len(sections) == 0 {
+			fmt.Println(b.Body)
+			continue
 		}
-		if sections["options"] && d.Options != "" {
-			fmt.Println(p.config.GetOptionsHeader())
-			fmt.Println(d.Options + "\n")
+
+		parsed, err := madr.ParseBody(b.Body)
+		if err != nil {
+			fmt.Printf("(failed to parse body: %v)\n", err)
+			continue
 		}
-		if sections["criteria"] && d.Criteria != "" {
-			fmt.Println(p.config.GetCriteriaHeader())
-			fmt.Println(d.Criteria + "\n")
-		}
-		if sections["outcome"] && d.Outcome != "" {
-			fmt.Println(p.config.GetOutcomeHeader())
-			fmt.Println(d.Outcome + "\n")
-		}
-		if sections["comments"] && d.Comments != "" {
-			fmt.Println(p.config.GetCommentsHeader())
-			fmt.Println(d.Comments + "\n")
+		for _, key := range []string{"context", "drivers", "options", "outcome", "pros-cons", "more", "comments"} {
+			if !sections[key] {
+				continue
+			}
+			if sec, ok := parsed.Sections[key]; ok {
+				fmt.Println(sec)
+			}
 		}
 	}
 }

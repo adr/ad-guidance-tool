@@ -53,15 +53,14 @@ func TestImport_FilterAndAddSuccess(t *testing.T) {
 		{ID: "0001"},
 		{ID: "0002"},
 	}
-	content := &decision.DecisionContent{}
+	body := "body content"
 
 	mockModelSvc.On("Exists", "target").Return(true)
 	mockDecisionSvc.On("GetAllDecisions", "target").Return(target, nil)
 	mockDecisionSvc.On("GetAllDecisions", "source").Return(source, nil)
 	mockDecisionSvc.On("FilterDecisions", source, mock.Anything).Return(source, nil)
-	mockDecisionSvc.On("GetDecisionContent", "source", mock.Anything).Return(content, nil)
-	mockDecisionSvc.On("AddExisting", "source", "target", mock.Anything, content, 3).Return(&decision.Decision{}, nil).Twice()
-	mockModelSvc.On("RebuildIndex", "target").Return(nil)
+	mockDecisionSvc.On("GetBody", "source", mock.Anything).Return(body, nil)
+	mockDecisionSvc.On("AddExisting", "source", "target", mock.Anything, body, 3).Return(&decision.Decision{}, nil).Twice()
 	mockOutput.On("Imported", "source", "target", 2).Return(nil)
 
 	interactor := NewImportModelInteractor(mockModelSvc, mockDecisionSvc, mockOutput)

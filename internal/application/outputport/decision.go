@@ -26,8 +26,19 @@ type DecisionList interface {
 	Listed(decisions []domain.Decision, format string)
 }
 
+// DecisionPrint receives the rendered body text for each decision being viewed.
+// The legacy DecisionContent struct (one parsed field per section) is gone;
+// printers now receive the raw body and either pass it through or run the
+// madr.ParseBody helper themselves if they need section-aware output.
 type DecisionPrint interface {
-	Printed(content []domain.DecisionContent, sections map[string]bool)
+	Printed(bodies []DecisionBody, sections map[string]bool)
+}
+
+// DecisionBody is what the DecisionPrint port receives — the decision's ID and
+// the raw markdown body. Sections filtering happens in the printer.
+type DecisionBody struct {
+	ID   string
+	Body string
 }
 
 type DecisionRevise interface {

@@ -51,8 +51,10 @@ func (r *FileModelRepository) RebuildIndex(modelPath string, decisions []domain.
 	return os.WriteFile(indexPath, yamlOut, 0644)
 }
 
+// Exists reports whether modelPath is a model directory. The fork drops
+// index.yaml, so we check that the path is a directory rather than that an
+// index file exists.
 func (r *FileModelRepository) Exists(modelPath string) bool {
-	indexPath := filepath.Join(modelPath, "index.yaml")
-	_, err := os.Stat(indexPath)
-	return err == nil
+	info, err := os.Stat(modelPath)
+	return err == nil && info.IsDir()
 }

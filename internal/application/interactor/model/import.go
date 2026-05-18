@@ -58,9 +58,7 @@ func (i *ImportModelInteractor) Import(sourcePath, targetPath string, filters ma
 		}
 	}
 
-	if err := i.modelService.RebuildIndex(targetPath); err != nil {
-		return fmt.Errorf("failed to rebuild target model index: %w", err)
-	}
+	// index.yaml is dropped in this fork; nothing to rebuild post-import.
 
 	i.output.Imported(sourcePath, targetPath, len(decisions))
 	return nil
@@ -107,12 +105,12 @@ func (i *ImportModelInteractor) loadAndFilterDecisions(sourcePath string, filter
 
 // adds a single decision from source into target, adjusting IDs
 func (i *ImportModelInteractor) importDecision(sourcePath, targetPath string, d decisiondomain.Decision, increment int) error {
-	content, err := i.decisionService.GetDecisionContent(sourcePath, d.ID)
+	body, err := i.decisionService.GetBody(sourcePath, d.ID)
 	if err != nil {
-		return fmt.Errorf("failed to load decision content for import: %w", err)
+		return fmt.Errorf("failed to load decision body for import: %w", err)
 	}
 
-	if _, err := i.decisionService.AddExisting(sourcePath, targetPath, &d, content, increment); err != nil {
+	if _, err := i.decisionService.AddExisting(sourcePath, targetPath, &d, body, increment); err != nil {
 		return fmt.Errorf("failed to add decision into target model: %w", err)
 	}
 	return nil

@@ -36,24 +36,23 @@ func TestMerge_SuccessfulMerge(t *testing.T) {
 	modelBDecisions := []decision.Decision{
 		{ID: "0001"},
 	}
-	content := &decision.DecisionContent{}
+	body := "body"
 
 	filters := map[string][]string{"id": {"0001", "0002"}}
 
 	mockModelSvc.On("Exists", "target").Return(false)
 	mockModelSvc.On("CreateModel", "target").Return(nil)
-	mockModelSvc.On("RebuildIndex", "target").Return(nil)
 
 	mockDecisionSvc.On("GetAllDecisions", "modelA").Return(modelADecisions, nil)
 	mockDecisionSvc.On("GetAllDecisions", "modelB").Return(modelBDecisions, nil)
 	mockDecisionSvc.On("FilterDecisions", modelADecisions, filters).Return(modelADecisions, nil)
 	mockDecisionSvc.On("FilterDecisions", modelBDecisions, filters).Return(modelBDecisions, nil)
 
-	mockDecisionSvc.On("GetDecisionContent", "modelA", "0002").Return(content, nil)
-	mockDecisionSvc.On("AddExisting", "modelA", "target", &modelADecisions[0], content, 0).Return(&decision.Decision{}, nil)
+	mockDecisionSvc.On("GetBody", "modelA", "0002").Return(body, nil)
+	mockDecisionSvc.On("AddExisting", "modelA", "target", &modelADecisions[0], body, 0).Return(&decision.Decision{}, nil)
 
-	mockDecisionSvc.On("GetDecisionContent", "modelB", "0001").Return(content, nil)
-	mockDecisionSvc.On("AddExisting", "modelB", "target", &modelBDecisions[0], content, 2).Return(&decision.Decision{}, nil)
+	mockDecisionSvc.On("GetBody", "modelB", "0001").Return(body, nil)
+	mockDecisionSvc.On("AddExisting", "modelB", "target", &modelBDecisions[0], body, 2).Return(&decision.Decision{}, nil)
 
 	mockOutput.On("Merged", "modelA", "modelB", "target", 2).Return(nil)
 
@@ -135,7 +134,7 @@ func TestMerge_CopyModelAFails(t *testing.T) {
 	mockModelSvc.On("Exists", "target").Return(false)
 	mockModelSvc.On("CreateModel", "target").Return(nil)
 	mockDecisionSvc.On("GetAllDecisions", "modelA").Return([]decision.Decision{{ID: "0001"}}, nil)
-	mockDecisionSvc.On("GetDecisionContent", "modelA", "0001").Return(nil, errors.New("no content"))
+	mockDecisionSvc.On("GetBody", "modelA", "0001").Return("", errors.New("no body"))
 
 	interactor := NewMergeModelsInteractor(mockModelSvc, mockDecisionSvc, mockOutput)
 	err := interactor.Merge("modelA", "modelB", "target", map[string][]string{})
@@ -153,9 +152,9 @@ func TestMerge_CopyModelBFails(t *testing.T) {
 	mockModelSvc.On("CreateModel", "target").Return(nil)
 	mockDecisionSvc.On("GetAllDecisions", "modelA").Return([]decision.Decision{{ID: "0001"}}, nil)
 	mockDecisionSvc.On("GetAllDecisions", "modelB").Return([]decision.Decision{{ID: "0002"}}, nil)
-	mockDecisionSvc.On("GetDecisionContent", "modelA", "0001").Return(&decision.DecisionContent{}, nil)
-	mockDecisionSvc.On("AddExisting", "modelA", "target", mock.Anything, mock.Anything, 0).Return(&decision.Decision{}, nil)
-	mockDecisionSvc.On("GetDecisionContent", "modelB", "0002").Return(nil, errors.New("no content"))
+	mockDecisionSvc.On("GetBody", "modelA", "0001").Return("body", nil)
+	mockDecisionSvc.On("AddExisting", "modelA", "target", mock.Anything, "body", 0).Return(&decision.Decision{}, nil)
+	mockDecisionSvc.On("GetBody", "modelB", "0002").Return("", errors.New("no body"))
 
 	interactor := NewMergeModelsInteractor(mockModelSvc, mockDecisionSvc, mockOutput)
 	err := interactor.Merge("modelA", "modelB", "target", map[string][]string{})
@@ -164,22 +163,3 @@ func TestMerge_CopyModelBFails(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to merge decisions from model")
 }
 
-func TestMerge_RebuildIndexFails(t *testing.T) {
-	mockModelSvc := new(svc_mocks.ModelService)
-	mockDecisionSvc := new(svc_mocks.DecisionService)
-	mockOutput := new(out_mocks.ModelMerge)
-
-	mockModelSvc.On("Exists", "target").Return(false)
-	mockModelSvc.On("CreateModel", "target").Return(nil)
-	mockDecisionSvc.On("GetAllDecisions", "modelA").Return([]decision.Decision{{ID: "0001"}}, nil)
-	mockDecisionSvc.On("GetDecisionContent", "modelA", "0001").Return(&decision.DecisionContent{}, nil)
-	mockDecisionSvc.On("AddExisting", "modelA", "target", mock.Anything, mock.Anything, 0).Return(&decision.Decision{}, nil)
-	mockDecisionSvc.On("GetAllDecisions", "modelB").Return([]decision.Decision{}, nil)
-	mockModelSvc.On("RebuildIndex", "target").Return(errors.New("write error"))
-
-	interactor := NewMergeModelsInteractor(mockModelSvc, mockDecisionSvc, mockOutput)
-	err := interactor.Merge("modelA", "modelB", "target", map[string][]string{})
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to rebuild index")
-}
