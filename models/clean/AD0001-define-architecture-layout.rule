@@ -1,7 +1,0 @@
-adr "0001" "define-architecture-layout"
-
-# add your rules here
-rule "rule_name" {
-  
-  severity error
-}

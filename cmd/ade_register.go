@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	adecmd "github.com/adr/ad-guidance-tool/cmd/ade"
+	adecmd "github.com/phi42/ad-enforcement-tool/enforce"
 )
 
 func init() {

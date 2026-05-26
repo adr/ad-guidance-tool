@@ -273,100 +273,18 @@ adg reset-config
 
 ## Enforcement
 
-ADG can enforce architectural decisions by compiling them into executable architecture tests or by verifying them directly against your codebase. Rules are written in a domain-specific language (DSL) and stored in `.rule` files alongside your ADRs.
+ADG can enforce architectural decisions via the `adg enforce` command, which is implemented using [ADE (Architectural Decision Enforcement)](https://github.com/phi42/ad-enforcement-tool).
 
-### Writing a rule file
+Rules are written in a domain-specific language (DSL) and stored in `.rule` files alongside your ADRs. Use `adg rule` to generate a template from an existing decision, then customize it.
 
-Use `adg rule` to generate a template from an existing decision, then customize it:
+The `adg enforce` command provides:
+- `adg enforce validate` — check rule file syntax
+- `adg enforce compile` — compile rules into architecture tests (Go, .NET, …) via a plugin
+- `adg enforce verify` — verify rules directly against the filesystem via a plugin
+- `adg enforce plugin` — install, update, and manage enforcement plugins
+- `adg enforce config` — manage configuration defaults
 
-```dsl
-adr "0001" "Use Clean Architecture"
-
-component "Domain" = "MyApp.Domain"
-component "Infra"  = "MyApp.Infrastructure"
-
-code "domain_isolated" {
-  Domain must not depend on Infra
-  severity error
-}
-
-file "tests_exist" {
-  path "tests/ArchTests/" must exist
-  severity error
-}
-```
-
-See [docs/dsl.md](docs/dsl.md) for the full DSL reference.
-
-### Validating rule files
-
-Check rule files for syntax errors without running any plugin:
-
-```bash
-adg enforce validate -i my-adr.rule
-adg enforce validate -i rules/     # validate all .rule files in a directory
-```
-
-### Compiling into architecture tests
-
-Compile rule files into executable tests using a language-specific plugin:
-
-```bash
-adg enforce compile -i my-adr.rule -p arch-go -o ./internal      # Go (arch-go)
-adg enforce compile -i my-adr.rule -p netarch -o ./src/Tests      # .NET (NetArchTest)
-```
-
-The generated test file is compiled and run as part of your normal test pipeline (`go test`, `dotnet test`).
-
-### Verifying directly
-
-`file` rules can be verified immediately against the filesystem without generating any test code:
-
-```bash
-adg enforce verify -i my-adr.rule -p filecheck
-```
-
-### Plugins
-
-Enforcement relies on plugins, which are separate executables that receive the parsed rule intermediate representation (IR) and generate tests or perform checks.
-
-| Plugin                                                                  | Target    | Description                                                                                      |
-| ----------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------ |
-| [`adplugin-arch-go`](https://github.com/phi42/adplugin-arch-go)         | Go        | Compiles `code` rules into [arch-go](https://github.com/arch-go/arch-go) tests                   |
-| [`adplugin-netarchtest`](https://github.com/phi42/adplugin-netarchtest) | .NET / C# | Compiles `code` rules into [NetArchTest](https://github.com/BenMorris/NetArchTest) + NUnit tests |
-| [`adplugin-fscheck`](https://github.com/phi42/adplugin-fscheck)         | Any       | Executes `file` rules directly against the filesystem                                            |
-
-Install a plugin from a GitHub release:
-
-```bash
-adg enforce plugin install arch-go --repo github.com/phi42/adplugin-arch-go
-```
-
-Or register a locally built binary:
-
-```bash
-adg enforce plugin install filecheck --path ./path/to/filecheck
-```
-
-### Configuration defaults
-
-To avoid passing `-p` and `-o` on every run:
-
-```bash
-adg enforce config set defaults.compile.plugin arch-go
-adg enforce config set defaults.compile.output ./internal
-adg enforce config set defaults.verify.plugin  filecheck
-```
-
-Defaults are stored in `.ade.yaml` in the project directory or in the global config. See [docs/enforcement.md](docs/enforcement.md) for the full command reference and configuration details.
-
-### VS Code extension
-
-A syntax-highlighting extension for `.rule` files is available in [editor/vscode](editor/vscode/). Install from the [latest release](https://github.com/adr/ad-guidance-tool/releases):
-
-```bash
-code --install-extension ade-syntax.vsix
-```
+See the [ADE repository](https://github.com/phi42/ad-enforcement-tool) for more documentation.
 
 ## Example Model
 
