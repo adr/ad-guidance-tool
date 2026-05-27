@@ -60,6 +60,7 @@ Available Commands:
   init         Initializes a new model
   link         Link two decisions using optional custom tags or default precedes/succeeds logic
   list         Lists decisions in the model, optionally filtering by tag, status, title, or ID
+  mcp          MCP server setup for AI tool integration
   merge        Merges two decision models into a new target model
   rebuild      Rebuilds the index file for the given model
   reset-config Reset all configuration (or only template headers with --template)
@@ -278,13 +279,58 @@ ADG can enforce architectural decisions via the `adg enforce` command, which is 
 Rules are written in a domain-specific language (DSL) and stored in `.rule` files alongside your ADRs. Use `adg rule` to generate a template from an existing decision, then customize it.
 
 The `adg enforce` command provides:
-- `adg enforce validate` — check rule file syntax
-- `adg enforce compile` — compile rules into architecture tests (Go, .NET, …) via a plugin
-- `adg enforce verify` — verify rules directly against the filesystem via a plugin
-- `adg enforce plugin` — install, update, and manage enforcement plugins
-- `adg enforce config` — manage configuration defaults
+| Subcommand             | Description                                                      |
+| ---------------------- | ---------------------------------------------------------------- |
+| `validate` | check rule file syntax                                           |
+| `compile`  | compile rules into architecture tests (Go, .NET, …) via a plugin |
+| `verify`   | verify rules directly against the filesystem via a plugin        |
+| `plugin`   | install, update, and manage enforcement plugins                  |
+| `config`   | manage configuration defaults                                    |
 
-See the [ADE repository](https://github.com/phi42/ad-enforcement-tool) for more documentation.
+See the [ADE repository](https://github.com/phi42/ad-enforcement-tool/tree/main/docs) for more documentation.
+
+### AI Integration (MCP)
+
+ADG includes an MCP (Model Context Protocol) server that lets AI assistants read your ADRs, access the DSL reference, and validate generated rule files. This enables workflows where the AI generates a `.rule` file from an ADR and immediately validates it before presenting the result.
+
+Run the following command to get a config snippet for your model:
+
+```bash
+adg mcp --model <model-name>
+```
+
+This prints the configuration for VS Code Copilot Chat. Other AI tools that support MCP can be configured similarly by adding a server with the same command and arguments.
+
+#### VS Code
+
+Add the snippet to `.vscode/mcp.json` in your workspace, or run `MCP: Add Server` in the command palette and select `Command (stdio)` to configure it interactively.
+
+```json
+{
+	"servers": {
+		"adg": {
+			"command": "./repos/ad-guidance-tool/adg.exe",
+			"args": ["mcp", "run", "--model", "<path-to-your-model>"]
+		}
+	}
+}
+```
+
+Once configured, open Copilot Chat in Agent mode and ask it to generate a rule file for an ADR, for example:
+
+```
+@adg Generate a rule file for ADR 0001.
+```
+
+### Available tools
+
+The MCP server exposes the following tools to the AI:
+
+- `list_adrs`: list all decisions in the model with their ID, title, and status
+- `get_adr`: retrieve the full content of a specific ADR and the path where its rule file should be placed
+- `get_dsl_reference`: retrieve the full ADE rule DSL language reference
+- `list_rule_files`: list all existing `.rule` files in the model directory as examples
+- `validate_rule`: validate the syntax and semantics of rule content using the ADE parser
 
 ## Example Model
 

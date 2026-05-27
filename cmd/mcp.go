@@ -1,40 +1,75 @@
 package cmd
 
 import (
+	"fmt"
+
 	util "github.com/adr/ad-guidance-tool/internal/adapter/command"
 	adgmcp "github.com/adr/ad-guidance-tool/internal/adapter/mcp"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-	rootCmd.AddCommand(newMCPCommand())
+	mcpCmd := newMCPCommand()
+	mcpCmd.AddCommand(newMCPRunCommand())
+	rootCmd.AddCommand(mcpCmd)
 }
 
 func newMCPCommand() *cobra.Command {
 	var modelPath string
 
 	c := &cobra.Command{
-		Use:    "mcp",
-		Short:  "Start the ADG MCP server for AI tool integration",
-		Hidden: true,
-		Long: `Start the ADG MCP server for AI tool integration.
+		Use:   "mcp",
+		Short: "MCP server setup for AI tool integration",
+		Long:  `Configure the ADG MCP server for use with VS Code Copilot or other MCP-compatible AI assistants.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			displayPath := modelPath
+			if displayPath == "" {
+				if configSvc.IsLoaded() && configSvc.GetDefaultModelPath() != "" {
+					displayPath = configSvc.GetDefaultModelPath()
+				} else {
+					displayPath = "<path-to-model>"
+				}
+			}
 
-The server communicates over stdio using the Model Context Protocol (MCP) and
-provides AI assistants (e.g. VS Code Copilot, Claude Desktop) with tools to
-read ADRs, access the ADE rule DSL reference, and browse existing rule files.
+			fmt.Printf(`ADG MCP server - AI tool integration
 
-Configure it in your AI tool's MCP settings, for example in .vscode/mcp.json:
+When running, the server provides AI assistants with tools to read ADRs,
+access the ADE rule DSL reference, browse existing rule files, and validate
+generated rule content.
+
+Add to .vscode/mcp.json in your project:
 
   {
     "servers": {
       "adg": {
         "command": "adg",
-        "args": ["mcp", "--model", "./docs/adr"]
+        "args": ["mcp", "run", "--model", "%s"]
       }
     }
   }
 
-If --model is omitted, the default model path from the adg config is used.`,
+Or run "MCP: Add Server" in VS Code and select "Command (stdio)" to
+configure this interactively.
+
+Other MCP-compatible AI tools use the same command and args but may require
+a different config file and structure.
+
+`, displayPath)
+			return nil
+		},
+	}
+
+	c.Flags().StringVar(&modelPath, "model", "", "Path to the ADR model (used in the generated config snippet)")
+	return c
+}
+
+func newMCPRunCommand() *cobra.Command {
+	var modelPath string
+
+	c := &cobra.Command{
+		Use:    "run",
+		Short:  "Start the ADG MCP server over stdio",
+		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolvedPath, err := util.ResolveModelPathOrDefault(modelPath, configSvc)
 			if err != nil {
