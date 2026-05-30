@@ -65,7 +65,6 @@ Available Commands:
   rebuild      Rebuilds the index file for the given model
   reset-config Reset all configuration (or only template headers with --template)
   revise       Creates a copy of a decision and resets its status to 'open' (if not already)
-  rule         Generate a .rule file template for an ADR
   set-config   Set persistent configuration values
   tag          Categorizes a decision by adding one or more tags to its metadata
   validate     Validate the models decisions by checking if the files match the index file
@@ -211,13 +210,13 @@ ADG can generate `.rule` files based on your architectural decisions. These rule
 To generate a rule file for an existing decision:
 
 ```bash
-adg rule --model <model-name> --id <decision-id>
+adg enforce rule --model <model-name> --id <decision-id>
 ```
 
 Or using the decision title:
 
 ```bash
-adg rule --model <model-name> --title <decision-title>
+adg enforce rule --model <model-name> --title <decision-title>
 ```
 
 By default, the rule file is created in the same directory as the ADR with the same filename but a `.rule` extension (e.g., `AD0001-my-decision.rule`).
@@ -225,13 +224,13 @@ By default, the rule file is created in the same directory as the ADR with the s
 You can specify a custom output path:
 
 ```bash
-adg rule --model <model-name> --id <decision-id> --output path/to/custom.rule
+adg enforce rule --model <model-name> --id <decision-id> --output path/to/custom.rule
 ```
 
 Or a custom output directory (the filename will be based on the ADR filename):
 
 ```bash
-adg rule --model <model-name> --id <decision-id> --output path/to/directory/
+adg enforce rule --model <model-name> --id <decision-id> --output path/to/directory/
 ```
 
 The generated rule file contains a template with the ADR ID and title pre-filled:
@@ -276,7 +275,7 @@ adg reset-config
 
 ADG can enforce architectural decisions via the `adg enforce` command, which is implemented using [ADE (Architectural Decision Enforcement)](https://github.com/phi42/ad-enforcement-tool).
 
-Rules are written in a domain-specific language (DSL) and stored in `.rule` files alongside your ADRs. Use `adg rule` to generate a template from an existing decision, then customize it.
+Rules are written in a domain-specific language (DSL) and stored in `.rule` files alongside your ADRs. Use `adg enforce rule` to generate a template from an existing decision, then customize it.
 
 The `adg enforce` command provides:
 | Subcommand             | Description                                                      |

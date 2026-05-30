@@ -1,0 +1,12 @@
+defaults:
+    compile:
+        input: .\docs\adr\
+        plugin: arch-go
+    verify:
+        input: .\docs\adr\
+        plugin: filecheck
+plugin_configs:
+    arch-go:
+        output-dir: g_tests
+    fscheck:
+        root-dir: .
