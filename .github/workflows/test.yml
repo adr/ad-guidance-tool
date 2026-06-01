@@ -20,8 +20,8 @@ jobs:
       - name: Build adg
         run: go build -o bin/adg ./adg
 
-      - name: Install arch-go plugin
-        run: ./bin/adg enforce plugin install arch-go --repo github.com/phi42/ad-plugin-archgo
+      - name: Install archgo plugin
+        run: ./bin/adg enforce plugin install archgo --repo github.com/phi42/ad-plugin-archgo
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -31,10 +31,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compile ADR rules into architecture tests
-        run: ./bin/adg enforce compile -i docs/adr/ -p arch-go -o archtest/
+        run: ./bin/adg enforce compile
 
       - name: Verify file-system rules
-        run: ./bin/adg enforce verify -i docs/adr/AD0004-required-project-files-must-exist-at-the-repository-root.rule -p fscheck
+        run: ./bin/adg enforce verify
 
       - name: Run all tests
         run: go test ./...

@@ -36,3 +36,6 @@ dist/
 # VS Code extension build artifacts
 editor/vscode/node_modules/
 editor/vscode/ade-syntax.vsix
+
+# Architecture tests generated from ADR rules
+ADR_*_archgo_test.go
