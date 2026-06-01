@@ -1,4 +1,7 @@
 # ADG
+
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+
 ADG (Architectural Decision Guidance) is a command-line tool written in Go for modeling, managing, and reusing architectural decisions in a lightweight and structured way.
 
 An architectural decision is a justified design choice addressing a functional or non-functional requirement that is architecturally significant. These decisions can be captured using Architectural Decision Records (ADRs). ADG allows you to create and edit ADRs, group them into *models*, and manage those models. A model can be created, copied, imported, or merged, providing guidance for recurring decisions.
@@ -364,7 +367,3 @@ We follow [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/
 ADG was developed as part of two theses at the [Eastern Switzerland University of Applied Sciences](https://www.ost.ch/en/)
 - [Concept Alternatives for the Management of Architectural Decisions in Clean Architectures](https://eprints.ost.ch/id/eprint/1280/1/MSECS-FS24-CleanArchitectureDecisionsConceptsRS.pdf)
 - [A Command-Line Tool for Managing Recurring Architectural Decisions: Design, Implementation, and Empirical Evaluation](https://eprints.ost.ch/id/eprint/1287/1/PA2-Raphael-Schellander.pdf)
-
-## License
-
-ADG is released under the [Apache License, Version 2.0.](https://www.apache.org/licenses/LICENSE-2.0)
