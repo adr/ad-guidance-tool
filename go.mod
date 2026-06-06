@@ -42,5 +42,3 @@ require (
 	golang.org/x/tools v0.45.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
-
-replace github.com/phi42/ad-enforcement-tool => ../ad-enforcement-tool
