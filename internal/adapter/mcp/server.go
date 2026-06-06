@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	aderule "github.com/phi42/ad-enforcement-tool/dslref"
 	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
+	aderule "github.com/phi42/ad-enforcement-tool/dsl"
 )
 
 // Serve starts the ADG MCP server over stdio.

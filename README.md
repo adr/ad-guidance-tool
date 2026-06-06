@@ -367,3 +367,7 @@ We follow [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/
 ADG was developed as part of two theses at the [Eastern Switzerland University of Applied Sciences](https://www.ost.ch/en/)
 - [Concept Alternatives for the Management of Architectural Decisions in Clean Architectures](https://eprints.ost.ch/id/eprint/1280/1/MSECS-FS24-CleanArchitectureDecisionsConceptsRS.pdf)
 - [A Command-Line Tool for Managing Recurring Architectural Decisions: Design, Implementation, and Empirical Evaluation](https://eprints.ost.ch/id/eprint/1287/1/PA2-Raphael-Schellander.pdf)
+
+## License
+
+Licensed under the [Apache License, Version 2.0](./LICENSE).

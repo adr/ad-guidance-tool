@@ -6,7 +6,7 @@ defaults:
         input: ./docs/adr/
         plugin: fscheck
 plugin_configs:
-    arch-go:
+    archgo:
         output-dir: ./adg/
     fscheck:
         root-dir: .

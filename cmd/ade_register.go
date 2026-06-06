@@ -4,7 +4,7 @@ import (
 	cmd "github.com/adr/ad-guidance-tool/internal/adapter/command/decision"
 	print "github.com/adr/ad-guidance-tool/internal/adapter/printer/decision"
 	interactor "github.com/adr/ad-guidance-tool/internal/application/interactor/decision"
-	adecmd "github.com/phi42/ad-enforcement-tool/enforce"
+	adecmd "github.com/phi42/ad-enforcement-tool/cmd"
 )
 
 func init() {

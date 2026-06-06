@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/arch-go/arch-go v1.7.0
 	github.com/mark3labs/mcp-go v0.54.1
-	github.com/phi42/ad-enforcement-tool v0.1.1-dev
+	github.com/phi42/ad-enforcement-tool v0.1.2-dev
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
@@ -42,3 +42,5 @@ require (
 	golang.org/x/tools v0.45.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
+
+replace github.com/phi42/ad-enforcement-tool => ../ad-enforcement-tool

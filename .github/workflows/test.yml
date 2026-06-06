@@ -21,12 +21,12 @@ jobs:
         run: go build -o bin/adg ./adg
 
       - name: Install archgo plugin
-        run: ./bin/adg enforce plugin install archgo --repo github.com/phi42/ad-plugin-archgo
+        run: ./bin/adg enforce plugin install archgo --repo github.com/phi42/ad-plugin-archgo@v0.1.2-dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install fscheck plugin
-        run: ./bin/adg enforce plugin install fscheck --repo github.com/phi42/ad-plugin-fscheck
+        run: ./bin/adg enforce plugin install fscheck --repo github.com/phi42/ad-plugin-fscheck@v0.1.2-dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
