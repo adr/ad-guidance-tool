@@ -33,5 +33,9 @@ func (i *ModelValidateInteractor) Validate(modelPath string) error {
 
 	i.output.ModelValidated(modelPath, indexErr, dataErr)
 
-	return nil
+	if indexErr != nil {
+		return indexErr
+	}
+
+	return dataErr
 }

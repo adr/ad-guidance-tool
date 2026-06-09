@@ -43,7 +43,7 @@ func TestValidate_IndexError(t *testing.T) {
 
 	err := interactor.Validate(modelPath)
 
-	assert.NoError(t, err)
+	assert.EqualError(t, err, indexErr.Error())
 	mockSvc.AssertExpectations(t)
 	mockOutput.AssertExpectations(t)
 }
@@ -63,7 +63,7 @@ func TestValidate_DataError(t *testing.T) {
 
 	err := interactor.Validate(modelPath)
 
-	assert.NoError(t, err)
+	assert.EqualError(t, err, dataErr.Error())
 	mockSvc.AssertExpectations(t)
 	mockOutput.AssertExpectations(t)
 }
