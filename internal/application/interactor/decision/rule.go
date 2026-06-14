@@ -93,12 +93,12 @@ func generateRuleTemplate(id, title string) string {
 # component "MyComponent" = "com.example.mypackage"
 # path "MyPath" = "src/mypackage"
 
-code "rule_name" {
+code "code_rule" {
   # MyComponent must not depend on MyOtherComponent
   severity error
 }
 
-file "rule_name" {
+file "file_rule" {
   # path "**/*.go" must exist
   severity error
 }

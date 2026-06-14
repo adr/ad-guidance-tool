@@ -281,8 +281,8 @@ ADG can enforce architectural decisions via the `adg enforce` command, which is 
 Rules are written in a domain-specific language (DSL) and stored in `.rule` files alongside your ADRs. Use `adg enforce rule` to generate a template from an existing decision, then customize it.
 
 The `adg enforce` command provides:
-| Subcommand             | Description                                                      |
-| ---------------------- | ---------------------------------------------------------------- |
+| Subcommand | Description                                                      |
+| ---------- | ---------------------------------------------------------------- |
 | `validate` | check rule file syntax                                           |
 | `compile`  | compile rules into architecture tests (Go, .NET, …) via a plugin |
 | `verify`   | verify rules directly against the filesystem via a plugin        |

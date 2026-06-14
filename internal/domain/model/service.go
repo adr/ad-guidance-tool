@@ -1,12 +1,13 @@
 package model
 
 import (
-	"github.com/adr/ad-guidance-tool/internal/domain"
-	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 	"fmt"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/adr/ad-guidance-tool/internal/domain"
+	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 )
 
 type ModelService interface {
@@ -181,9 +182,52 @@ func metadataEqual(a, b decisiondomain.Decision) bool {
 	return a.ID == b.ID &&
 		a.Title == b.Title &&
 		a.Status == b.Status &&
-		reflect.DeepEqual(a.Tags, b.Tags) &&
-		reflect.DeepEqual(a.Links, b.Links) &&
-		reflect.DeepEqual(a.Comments, b.Comments)
+		stringSlicesEqualIgnoreNil(a.Tags, b.Tags) &&
+		linksEqual(a.Links, b.Links) &&
+		commentSlicesEqualIgnoreNil(a.Comments, b.Comments)
+}
+
+// stringSlicesEqualIgnoreNil treats nil and empty slice as equal.
+func stringSlicesEqualIgnoreNil(a, b []string) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	return reflect.DeepEqual(a, b)
+}
+
+// commentSlicesEqualIgnoreNil treats nil and empty slice as equal.
+func commentSlicesEqualIgnoreNil(a, b []decisiondomain.Comment) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	return reflect.DeepEqual(a, b)
+}
+
+// linksEqual compares Links treating nil and empty slices/maps as equal.
+func linksEqual(a, b decisiondomain.Links) bool {
+	return stringSlicesEqualIgnoreNil(a.Precedes, b.Precedes) &&
+		stringSlicesEqualIgnoreNil(a.Succeeds, b.Succeeds) &&
+		stringSliceMapsEqualIgnoreNil(a.Custom, b.Custom)
+}
+
+// stringSliceMapsEqualIgnoreNil treats nil and empty map as equal.
+func stringSliceMapsEqualIgnoreNil(a, b map[string][]string) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	if len(a) != len(b) {
+		return false
+	}
+	for k, va := range a {
+		vb, ok := b[k]
+		if !ok {
+			return false
+		}
+		if !stringSlicesEqualIgnoreNil(va, vb) {
+			return false
+		}
+	}
+	return true
 }
 
 func validateRequiredAnchors(content string) []string {

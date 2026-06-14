@@ -1,15 +1,19 @@
 package cmd
 
 import (
+	"log"
+
 	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 	modeldomain "github.com/adr/ad-guidance-tool/internal/domain/model"
 	configinfra "github.com/adr/ad-guidance-tool/internal/infrastructure/config"
 	decisioninfra "github.com/adr/ad-guidance-tool/internal/infrastructure/decision"
 	modelinfra "github.com/adr/ad-guidance-tool/internal/infrastructure/model"
-	"log"
 
 	"github.com/spf13/cobra"
 )
+
+// Version is set at build time via -ldflags.
+var Version = "1.0.3-dev"
 
 var rootCmd = &cobra.Command{
 	Use:   "adg",
@@ -30,6 +34,8 @@ func Execute() error {
 	if err != nil {
 		log.Fatalf("failed to initialize config service: %v", err)
 	}
+
+	rootCmd.Version = Version
 
 	// todo: check if index needs to be rebuilt
 

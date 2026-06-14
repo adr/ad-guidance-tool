@@ -8,6 +8,8 @@ builds:
   - env:
       - CGO_ENABLED=0
     dir: adg
+    ldflags:
+      - -s -w -X github.com/adr/ad-guidance-tool/cmd.Version={{.Version}}
     goos:
       - linux
       - windows
