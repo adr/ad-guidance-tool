@@ -102,8 +102,8 @@ func TestRule_WithCustomOutputPath(t *testing.T) {
 	content, err := os.ReadFile(customOutput)
 	assert.NoError(t, err)
 	assert.Contains(t, string(content), `adr "0001" "test-decision"`)
-	assert.Contains(t, string(content), `code "rule_name"`)
-	assert.Contains(t, string(content), `file "rule_name"`)
+	assert.Contains(t, string(content), `code "code_rule"`)
+	assert.Contains(t, string(content), `file "file_rule"`)
 }
 
 func TestRule_WithCustomOutputDirectory(t *testing.T) {
@@ -215,7 +215,7 @@ func TestRule_TemplateGeneration(t *testing.T) {
 	content := generateRuleTemplate(id, title)
 
 	assert.Contains(t, content, `adr "0001" "test-decision"`)
-	assert.Contains(t, content, `code "rule_name"`)
-	assert.Contains(t, content, `file "rule_name"`)
+	assert.Contains(t, content, `code "code_rule"`)
+	assert.Contains(t, content, `file "file_rule"`)
 	assert.Contains(t, content, "severity error")
 }
