@@ -12,13 +12,15 @@ To start using ADG, you can either download the [latest release](https://github.
 
 ### Downloading a release
 
-Precompiled executables for major operating systems are available:
-- Windows: `adg_win.exe`
-- Linux: `adg_linux`
-- macOS (Intel): `adg_mac_intel`
-- macOS (Apple Silicon): `adg_mac_arm`
+Precompiled executables for major operating systems are available on the [releases page](https://github.com/adr/ad-guidance-tool/releases). Download the asset that matches your OS and architecture; filenames follow the pattern `ad-guidance-tool_<version>_<os>_<arch>`:
 
-> For convenience, feel free to remove the suffix (e.g., `_win`) after you have downloaded the file.
+- Windows (x86-64): `ad-guidance-tool_<version>_windows_amd64.exe`
+- Linux (x86-64): `ad-guidance-tool_<version>_linux_amd64`
+- Linux (ARM64): `ad-guidance-tool_<version>_linux_arm64`
+- macOS (Intel): `ad-guidance-tool_<version>_darwin_amd64`
+- macOS (Apple Silicon): `ad-guidance-tool_<version>_darwin_arm64`
+
+> On Linux and macOS, make the downloaded file executable with `chmod +x <filename>` and optionally rename it to `adg` for convenience.
 
 ### Installing via Go
 
@@ -350,6 +352,13 @@ adg -h            # for a general overview
 adg <command> -h  # for a specific command
 ```
 
+## Example Applications
+
+The following projects use ADG and can serve as concrete references:
+
+- [docs/adr/](docs/adr/): the ADG tool itself manages its own architectural decisions using ADG.
+- [Three Letter Abbreviations (TLA) Sample Application ](https://github.com/OST-Cloud-Application-Lab/tla-sample-serverless-eda-with-sqs-queue-sample): a sample serverless application using ADG for decision management and enforcement.
+
 ## Contributing
 
 If you have a feature request or found a bug, you can [open an issue](https://github.com/adr/ad-guidance-tool/issues) to share your feedback.
@@ -367,6 +376,8 @@ We follow [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/
 ADG was developed as part of two theses at the [Eastern Switzerland University of Applied Sciences](https://www.ost.ch/en/)
 - [Concept Alternatives for the Management of Architectural Decisions in Clean Architectures](https://eprints.ost.ch/id/eprint/1280/1/MSECS-FS24-CleanArchitectureDecisionsConceptsRS.pdf)
 - [A Command-Line Tool for Managing Recurring Architectural Decisions: Design, Implementation, and Empirical Evaluation](https://eprints.ost.ch/id/eprint/1287/1/PA2-Raphael-Schellander.pdf)
+
+A follow-up focusing on *Architectural Decision Enforcement* is in progress.
 
 ## License
 
