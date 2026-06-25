@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build adg
+        run: go build -o bin/adg ./adg
+
+      - name: Install archgo plugin
+        run: ./bin/adg enforce plugin install archgo --repo github.com/phi42/ad-plugin-archgo@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install fscheck plugin
+        run: ./bin/adg enforce plugin install fscheck --repo github.com/phi42/ad-plugin-fscheck@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compile ADR rules into architecture tests
+        run: ./bin/adg enforce compile
+
+      - name: Verify file-system rules
+        run: ./bin/adg enforce verify
+
+      - name: Run all tests
+        run: go test ./...

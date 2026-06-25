@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	decision "adg/internal/domain/decision"
+	decision "github.com/adr/ad-guidance-tool/internal/domain/decision"
 
 	mock "github.com/stretchr/testify/mock"
 )

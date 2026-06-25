@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"adg/internal/domain"
-	"adg/internal/domain/decision"
+	"github.com/adr/ad-guidance-tool/internal/domain"
+	"github.com/adr/ad-guidance-tool/internal/domain/decision"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

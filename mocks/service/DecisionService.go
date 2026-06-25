@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	decision "adg/internal/domain/decision"
+	decision "github.com/adr/ad-guidance-tool/internal/domain/decision"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -284,6 +284,34 @@ func (_m *DecisionService) GetDecisionContent(modelPath string, decisionID strin
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*decision.DecisionContent)
 		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(modelPath, decisionID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetDecisionFilePath provides a mock function with given fields: modelPath, decisionID
+func (_m *DecisionService) GetDecisionFilePath(modelPath string, decisionID string) (string, error) {
+	ret := _m.Called(modelPath, decisionID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDecisionFilePath")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, string) (string, error)); ok {
+		return rf(modelPath, decisionID)
+	}
+	if rf, ok := ret.Get(0).(func(string, string) string); ok {
+		r0 = rf(modelPath, decisionID)
+	} else {
+		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {

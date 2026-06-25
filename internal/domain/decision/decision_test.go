@@ -83,3 +83,75 @@ func TestAsStringSlice_WithNil(t *testing.T) {
 func TestAsStringSlice_WithUnsupportedType(t *testing.T) {
 	assert.Empty(t, asStringSlice(42))
 }
+
+func TestDecision_MarshalYAML_OmitsEmptyFields(t *testing.T) {
+	decision := Decision{
+		ID:       "0001",
+		Title:    "Test Decision",
+		Status:   "accepted",
+		Tags:     []string{},
+		Links:    Links{},
+		Comments: []Comment{},
+	}
+
+	data, err := yaml.Marshal(&decision)
+	assert.NoError(t, err)
+
+	yamlStr := string(data)
+	assert.NotContains(t, yamlStr, "tags:")
+	assert.NotContains(t, yamlStr, "links:")
+	assert.NotContains(t, yamlStr, "comments:")
+	assert.Contains(t, yamlStr, "adr_id: \"0001\"")
+	assert.Contains(t, yamlStr, "title: Test Decision")
+	assert.Contains(t, yamlStr, "status: accepted")
+}
+
+func TestDecision_MarshalYAML_IncludesNonEmptyFields(t *testing.T) {
+	decision := Decision{
+		ID:     "0002",
+		Title:  "Another Decision",
+		Status: "proposed",
+		Tags:   []string{"urgent", "architecture"},
+		Links: Links{
+			Precedes: []string{"0001"},
+		},
+		Comments: []Comment{
+			{Author: "Alice", Date: "2024-01-01", Comment: "Good idea"},
+		},
+	}
+
+	data, err := yaml.Marshal(&decision)
+	assert.NoError(t, err)
+
+	yamlStr := string(data)
+	assert.Contains(t, yamlStr, "tags:")
+	assert.Contains(t, yamlStr, "links:")
+	assert.Contains(t, yamlStr, "comments:")
+	assert.Contains(t, yamlStr, "urgent")
+	assert.Contains(t, yamlStr, "architecture")
+	assert.Contains(t, yamlStr, "precedes:")
+	assert.Contains(t, yamlStr, "Alice")
+}
+
+func TestLinks_MarshalYAML_OmitsEmptyArrays(t *testing.T) {
+	links := Links{
+		Precedes: []string{},
+		Succeeds: []string{},
+		Custom: map[string][]string{
+			"empty":    {},
+			"nonempty": {"X"},
+		},
+	}
+
+	out, err := links.MarshalYAML()
+	assert.NoError(t, err)
+
+	asMap, ok := out.(map[string]any)
+	assert.True(t, ok)
+
+	assert.NotContains(t, asMap, "precedes")
+	assert.NotContains(t, asMap, "succeeds")
+	assert.NotContains(t, asMap, "empty")
+	assert.Contains(t, asMap, "nonempty")
+	assert.ElementsMatch(t, []string{"X"}, asMap["nonempty"])
+}

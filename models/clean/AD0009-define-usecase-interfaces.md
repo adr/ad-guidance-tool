@@ -12,7 +12,6 @@ links:
         - "0010"
     succeeds:
         - "0003"
-comments: []
 ---
 
 ## <a name="question"></a> Question

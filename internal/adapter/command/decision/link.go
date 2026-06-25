@@ -1,9 +1,9 @@
 package decision
 
 import (
-	util "adg/internal/adapter/command"
-	"adg/internal/application/inputport"
-	domain "adg/internal/domain/config"
+	util "github.com/adr/ad-guidance-tool/internal/adapter/command"
+	"github.com/adr/ad-guidance-tool/internal/application/inputport"
+	domain "github.com/adr/ad-guidance-tool/internal/domain/config"
 	"fmt"
 	"strings"
 

@@ -1,0 +1,11 @@
+defaults:
+    compile:
+        plugin: archgo
+    input: ./docs/adr
+    verify:
+        plugin: fscheck
+plugin_configs:
+    archgo:
+        output-dir: ./adg/
+    fscheck:
+        root-dir: .

@@ -1,4 +1,7 @@
 # ADG
+
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+
 ADG (Architectural Decision Guidance) is a command-line tool written in Go for modeling, managing, and reusing architectural decisions in a lightweight and structured way.
 
 An architectural decision is a justified design choice addressing a functional or non-functional requirement that is architecturally significant. These decisions can be captured using Architectural Decision Records (ADRs). ADG allows you to create and edit ADRs, group them into *models*, and manage those models. A model can be created, copied, imported, or merged, providing guidance for recurring decisions.
@@ -9,13 +12,25 @@ To start using ADG, you can either download the [latest release](https://github.
 
 ### Downloading a release
 
-Precompiled executables for major operating systems are available:
-- Windows: `adg_win.exe`
-- Linux: `adg_linux`
-- macOS (Intel): `adg_mac_intel`
-- macOS (Apple Silicon): `adg_mac_arm`
+Precompiled executables for major operating systems are available on the [releases page](https://github.com/adr/ad-guidance-tool/releases). Download the asset that matches your OS and architecture; filenames follow the pattern `ad-guidance-tool_<version>_<os>_<arch>`:
 
-> For convenience, feel free to remove the suffix (e.g., `_win`) after you have downloaded the file.
+- Windows (x86-64): `ad-guidance-tool_<version>_windows_amd64.exe`
+- Linux (x86-64): `ad-guidance-tool_<version>_linux_amd64`
+- Linux (ARM64): `ad-guidance-tool_<version>_linux_arm64`
+- macOS (Intel): `ad-guidance-tool_<version>_darwin_amd64`
+- macOS (Apple Silicon): `ad-guidance-tool_<version>_darwin_arm64`
+
+> On Linux and macOS, make the downloaded file executable with `chmod +x <filename>` and optionally rename it to `adg` for convenience.
+
+### Installing via Go
+
+If you have [Go](https://go.dev/dl/) installed, you can install ADG directly using:
+
+```bash
+go install github.com/adr/ad-guidance-tool/adg@latest
+```
+
+This will download, build, and install the `adg` binary to your `$GOPATH/bin` directory (typically `~/go/bin` on Linux/macOS or `%USERPROFILE%\go\bin` on Windows). Make sure this directory is in your system's PATH.
 
 ### Building from source
 
@@ -24,7 +39,7 @@ To build ADG yourself, ensure that [Go](https://go.dev/dl/) is installed on your
 ```bash
 git clone https://github.com/adr/ad-guidance-tool.git
 cd ad-guidance-tool
-go build
+go build -o adg ./adg
 ```
 This will generate a binary in your current directory called `adg` (or `adg.exe` on Windows).
 
@@ -44,11 +59,13 @@ Available Commands:
   copy         Copies a model, optionally a subset based on filters
   decide       Marks a decision as decided by selecting one of its options
   edit         Edit a decision file
+  enforce      Enforce architectural decisions using rule files.
   help         Help about any command
   import       Imports a decision model into an existing model
   init         Initializes a new model
   link         Link two decisions using optional custom tags or default precedes/succeeds logic
   list         Lists decisions in the model, optionally filtering by tag, status, title, or ID
+  mcp          MCP server setup for AI tool integration
   merge        Merges two decision models into a new target model
   rebuild      Rebuilds the index file for the given model
   reset-config Reset all configuration (or only template headers with --template)
@@ -66,19 +83,19 @@ Use "adg [command] --help" for more information about a command.
 
 ### Shell auto-completion
 
-To enhance your workflow, ADG supports shell auto-completion. Generate a script with:
+ADG supports shell auto-completion for `bash`, `fish`, `powershell`, and `zsh`. Run the completion command with `--help` to see the installation instructions for your shell:
 
 ```bash
-adg completion [shell]
+adg completion powershell --help
 ```
 
-For example, to enable auto-completion in PowerShell:
+For example, to enable auto-completion in PowerShell, add the following line to your [PowerShell profile](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-7.5):
 
-```bash
-adg completion powershell
+```powershell
+adg completion powershell | Out-String | Invoke-Expression
 ```
 
-Copy the output into your [PowerShell profile](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-7.5) to enable completions. Follow a similar process for other shells (available: `bash`, `fish`, `powershell`, `zsh`).
+Other shells follow the same pattern: run `adg completion <shell> --help` for the shell-specific instructions.
 
 ## User Guide
 
@@ -100,7 +117,21 @@ To add a new decision to the model:
 adg add --model <model-name> --title <decision-title>
 ```
 
+Or simply provide the title as arguments without quotes:
+
+```bash
+adg add --model <model-name> <decision-title-words...>
+```
+
+For example:
+
+```bash
+adg add --model my-model Favor cloud functions over az logic apps
+```
+
 This generates a new Markdown file inside the model directory. Each new file includes a metadata block followed by three sections: *Question*, *Options*, *Criteria*.
+
+> **Tip:** When using positional arguments, the title is automatically assembled from all arguments after the command and flags. The `--title` flag is still available for backwards compatibility or when you need to add multiple decisions at once.
 
 You can edit these sections manually in a text editor, or using the `edit` command of the tool:
 
@@ -177,6 +208,57 @@ adg decide --model <model-name> --id <decision-id | decision-title> --option <op
 
 This will add a new section **Outcome** pointing out the chosen option and a rationale if provided to the command.
 
+### Generating rule files for ADRs
+
+ADG can generate `.rule` files based on your architectural decisions. These rule files encode architectural rules in a domain-specific language that can be compiled into architecture tests or verified directly using `adg enforce`.
+
+To generate a rule file for an existing decision:
+
+```bash
+adg enforce rule --model <model-name> --id <decision-id>
+```
+
+Or using the decision title:
+
+```bash
+adg enforce rule --model <model-name> --title <decision-title>
+```
+
+By default, the rule file is created in the same directory as the ADR with the same filename but a `.rule` extension (e.g., `AD0001-my-decision.rule`).
+
+You can specify a custom output path:
+
+```bash
+adg enforce rule --model <model-name> --id <decision-id> --output path/to/custom.rule
+```
+
+Or a custom output directory (the filename will be based on the ADR filename):
+
+```bash
+adg enforce rule --model <model-name> --id <decision-id> --output path/to/directory/
+```
+
+The generated rule file contains a template with the ADR ID and title pre-filled:
+
+```dsl
+adr "0001" "my-decision-title"
+
+# component "MyComponent" = "com.example.mypackage"
+# path "MyPath" = "src/mypackage"
+
+code "rule_name" {
+  # MyComponent must not depend on MyOtherComponent
+  severity error
+}
+
+file "rule_name" {
+  # path "**/*.go" must exist
+  severity error
+}
+```
+
+You can then customize this file to define specific architectural rules based on your decision. See the [Enforcement](#enforcement) section for how to compile or verify rule files.
+
 ### Config
 
 You can customize ADG's behavior using:
@@ -194,7 +276,67 @@ To reset all configuration values (and use the default configuration path again)
 adg reset-config
 ```
 
-### Example Model
+## Enforcement
+
+ADG can enforce architectural decisions via the `adg enforce` command, which is implemented using [ADE (Architectural Decision Enforcement)](https://github.com/phi42/ad-enforcement-tool).
+
+Rules are written in a domain-specific language (DSL) and stored in `.rule` files alongside your ADRs. Use `adg enforce rule` to generate a template from an existing decision, then customize it.
+
+The `adg enforce` command provides:
+| Subcommand | Description                                                      |
+| ---------- | ---------------------------------------------------------------- |
+| `validate` | check rule file syntax                                           |
+| `compile`  | compile rules into architecture tests (Go, .NET, …) via a plugin |
+| `verify`   | verify rules directly against the filesystem via a plugin        |
+| `plugin`   | install, update, and manage enforcement plugins                  |
+| `config`   | manage configuration defaults                                    |
+
+See the [ADE repository](https://github.com/phi42/ad-enforcement-tool/tree/main/docs) for more documentation.
+
+### AI Integration (MCP)
+
+ADG includes an MCP (Model Context Protocol) server that lets AI assistants read your ADRs, access the DSL reference, and validate generated rule files. This enables workflows where the AI generates a `.rule` file from an ADR and immediately validates it before presenting the result.
+
+Run the following command to get a config snippet for your model:
+
+```bash
+adg mcp --model <model-name>
+```
+
+This prints the configuration for VS Code Copilot Chat. Other AI tools that support MCP can be configured similarly by adding a server with the same command and arguments.
+
+#### VS Code
+
+Add the snippet to `.vscode/mcp.json` in your workspace, or run `MCP: Add Server` in the command palette and select `Command (stdio)` to configure it interactively.
+
+```json
+{
+	"servers": {
+		"adg": {
+			"command": "./repos/ad-guidance-tool/adg.exe",
+			"args": ["mcp", "run", "--model", "<path-to-your-model>"]
+		}
+	}
+}
+```
+
+Once configured, open Copilot Chat in Agent mode and ask it to generate a rule file for an ADR, for example:
+
+```
+@adg Generate a rule file for ADR 0001.
+```
+
+### Available tools
+
+The MCP server exposes the following tools to the AI:
+
+- `list_adrs`: list all decisions in the model with their ID, title, and status
+- `get_adr`: retrieve the full content of a specific ADR and the path where its rule file should be placed
+- `get_dsl_reference`: retrieve the full ADE rule DSL language reference
+- `list_rule_files`: list all existing `.rule` files in the model directory as examples
+- `validate_rule`: validate the syntax and semantics of rule content using the ADE parser
+
+## Example Model
 
 In the [models/clean](/models/clean/) directory, you’ll find a sample model containing common architectural decisions based on **Clean Architecture**.
 
@@ -209,6 +351,13 @@ For more commands see the help text output:
 adg -h            # for a general overview
 adg <command> -h  # for a specific command
 ```
+
+## Example Applications
+
+The following projects use ADG and can serve as concrete references:
+
+- [docs/adr/](docs/adr/): the ADG tool itself manages its own architectural decisions using ADG.
+- [Three Letter Abbreviations (TLA) Sample Application ](https://github.com/OST-Cloud-Application-Lab/tla-sample-serverless-eda-with-sqs-queue-sample): a sample serverless application using ADG for decision management and enforcement.
 
 ## Contributing
 
@@ -228,6 +377,8 @@ ADG was developed as part of two theses at the [Eastern Switzerland University o
 - [Concept Alternatives for the Management of Architectural Decisions in Clean Architectures](https://eprints.ost.ch/id/eprint/1280/1/MSECS-FS24-CleanArchitectureDecisionsConceptsRS.pdf)
 - [A Command-Line Tool for Managing Recurring Architectural Decisions: Design, Implementation, and Empirical Evaluation](https://eprints.ost.ch/id/eprint/1287/1/PA2-Raphael-Schellander.pdf)
 
+A follow-up focusing on *Architectural Decision Enforcement* is in progress.
+
 ## License
 
-ADG is released under the [Apache License, Version 2.0.](https://www.apache.org/licenses/LICENSE-2.0)
+Licensed under the [Apache License, Version 2.0](./LICENSE).

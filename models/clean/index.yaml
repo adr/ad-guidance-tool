@@ -11,8 +11,6 @@ decisions:
         links:
             precedes:
                 - "0002"
-            succeeds: []
-        comments: []
     "0002":
         adr_id: "0002"
         title: decide-entity-boundaries
@@ -27,7 +25,6 @@ decisions:
                 - "0003"
             succeeds:
                 - "0001"
-        comments: []
     "0003":
         adr_id: "0003"
         title: select-use-cases
@@ -42,7 +39,6 @@ decisions:
                 - "0004"
             succeeds:
                 - "0002"
-        comments: []
     "0004":
         adr_id: "0004"
         title: choose-adapter-patterns
@@ -57,7 +53,6 @@ decisions:
                 - "0005"
             succeeds:
                 - "0003"
-        comments: []
     "0005":
         adr_id: "0005"
         title: select-framework-and-drivers
@@ -68,10 +63,8 @@ decisions:
             - infrastructure
             - clean-architecture
         links:
-            precedes: []
             succeeds:
                 - "0004"
-        comments: []
     "0006":
         adr_id: "0006"
         title: decide-dataflow-transformations
@@ -81,10 +74,6 @@ decisions:
             - transformation
             - layer-boundaries
             - clean-architecture
-        links:
-            precedes: []
-            succeeds: []
-        comments: []
     "0007":
         adr_id: "0007"
         title: optimize-performance-scalability
@@ -94,10 +83,6 @@ decisions:
             - performance
             - workflow
             - clean-architecture
-        links:
-            precedes: []
-            succeeds: []
-        comments: []
     "0008":
         adr_id: "0008"
         title: integrate-external-systems
@@ -107,10 +92,6 @@ decisions:
             - external-system
             - interfaces
             - clean-architecture
-        links:
-            precedes: []
-            succeeds: []
-        comments: []
     "0009":
         adr_id: "0009"
         title: define-usecase-interfaces
@@ -125,7 +106,6 @@ decisions:
                 - "0010"
             succeeds:
                 - "0003"
-        comments: []
     "0010":
         adr_id: "0010"
         title: define-error-handling-strategy
@@ -140,7 +120,6 @@ decisions:
                 - "0011"
             succeeds:
                 - "0009"
-        comments: []
     "0011":
         adr_id: "0011"
         title: manage-cross-cutting-concerns
@@ -156,7 +135,6 @@ decisions:
                 - "0012"
             succeeds:
                 - "0010"
-        comments: []
     "0012":
         adr_id: "0012"
         title: define-testing-strategy
@@ -171,7 +149,6 @@ decisions:
                 - "0013"
             succeeds:
                 - "0011"
-        comments: []
     "0013":
         adr_id: "0013"
         title: define-dependency-injection-strategy
@@ -186,7 +163,6 @@ decisions:
                 - "0014"
             succeeds:
                 - "0012"
-        comments: []
     "0014":
         adr_id: "0014"
         title: structure-usecase-modules
@@ -201,7 +177,6 @@ decisions:
                 - "0015"
             succeeds:
                 - "0013"
-        comments: []
     "0015":
         adr_id: "0015"
         title: define-io-boundary-strategy
@@ -212,9 +187,7 @@ decisions:
             - interface-adapter
             - clean-architecture
         links:
-            precedes: []
             succeeds:
                 - "0004"
                 - "0009"
                 - "0010"
-        comments: []

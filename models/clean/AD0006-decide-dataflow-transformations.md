@@ -7,10 +7,6 @@ tags:
     - transformation
     - layer-boundaries
     - clean-architecture
-links:
-    precedes: []
-    succeeds: []
-comments: []
 ---
 
 ## <a name="question"></a> Question

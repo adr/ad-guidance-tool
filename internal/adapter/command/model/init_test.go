@@ -1,7 +1,7 @@
 package model
 
 import (
-	in_mocks "adg/mocks/inputport"
+	in_mocks "github.com/adr/ad-guidance-tool/mocks/inputport"
 	"errors"
 	"testing"
 

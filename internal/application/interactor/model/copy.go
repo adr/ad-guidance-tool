@@ -1,10 +1,10 @@
 package model
 
 import (
-	"adg/internal/application/inputport"
-	"adg/internal/application/outputport"
-	decisiondomain "adg/internal/domain/decision"
-	modeldomain "adg/internal/domain/model"
+	"github.com/adr/ad-guidance-tool/internal/application/inputport"
+	"github.com/adr/ad-guidance-tool/internal/application/outputport"
+	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
+	modeldomain "github.com/adr/ad-guidance-tool/internal/domain/model"
 	"fmt"
 )
 

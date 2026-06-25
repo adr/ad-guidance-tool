@@ -6,9 +6,9 @@ type Decision struct {
 	ID       string    `yaml:"adr_id"`
 	Title    string    `yaml:"title"`
 	Status   string    `yaml:"status"`
-	Tags     []string  `yaml:"tags"`
-	Links    Links     `yaml:"links"`
-	Comments []Comment `yaml:"comments"`
+	Tags     []string  `yaml:"tags,omitempty"`
+	Links    Links     `yaml:"links,omitempty"`
+	Comments []Comment `yaml:"comments,omitempty"`
 }
 
 type Links struct {
@@ -36,11 +36,17 @@ type DecisionContent struct {
 func (l Links) MarshalYAML() (any, error) {
 	out := make(map[string]any)
 
-	out["precedes"] = l.Precedes
-	out["succeeds"] = l.Succeeds
+	if len(l.Precedes) > 0 {
+		out["precedes"] = l.Precedes
+	}
+	if len(l.Succeeds) > 0 {
+		out["succeeds"] = l.Succeeds
+	}
 
 	for key, value := range l.Custom {
-		out[key] = value
+		if len(value) > 0 {
+			out[key] = value
+		}
 	}
 
 	return out, nil

@@ -1,0 +1,33 @@
+decisions:
+    "0001":
+        adr_id: "0001"
+        title: Domain layer is independent from upper layers
+        status: decided
+        comments:
+            - author: ""
+              date: "2026-05-15 18:40:35"
+              comment: "1"
+    "0002":
+        adr_id: "0002"
+        title: Application layer does not depend on adapters or infrastructure
+        status: decided
+        comments:
+            - author: ""
+              date: "2026-05-15 18:40:43"
+              comment: "1"
+    "0003":
+        adr_id: "0003"
+        title: No dependency cycles in internal packages
+        status: decided
+        comments:
+            - author: ""
+              date: "2026-05-15 18:40:51"
+              comment: "1"
+    "0004":
+        adr_id: "0004"
+        title: Required project files must exist at the repository root
+        status: decided
+        comments:
+            - author: ""
+              date: "2026-05-15 19:03:03"
+              comment: "1"

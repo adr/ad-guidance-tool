@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 
-	util "adg/internal/adapter/command"
-	domain "adg/internal/domain/config"
+	util "github.com/adr/ad-guidance-tool/internal/adapter/command"
+	domain "github.com/adr/ad-guidance-tool/internal/domain/config"
 
 	"github.com/spf13/cobra"
 )

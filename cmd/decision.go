@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	cmd "adg/internal/adapter/command/decision"
-	print "adg/internal/adapter/printer/decision"
-	interactor "adg/internal/application/interactor/decision"
+	cmd "github.com/adr/ad-guidance-tool/internal/adapter/command/decision"
+	print "github.com/adr/ad-guidance-tool/internal/adapter/printer/decision"
+	interactor "github.com/adr/ad-guidance-tool/internal/application/interactor/decision"
 )
 
 func init() {

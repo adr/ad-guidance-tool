@@ -1,9 +1,9 @@
 package decision
 
 import (
-	"adg/internal/domain/decision"
-	out_mocks "adg/mocks/outputport"
-	svc_mocks "adg/mocks/service"
+	"github.com/adr/ad-guidance-tool/internal/domain/decision"
+	out_mocks "github.com/adr/ad-guidance-tool/mocks/outputport"
+	svc_mocks "github.com/adr/ad-guidance-tool/mocks/service"
 	"errors"
 	"testing"
 

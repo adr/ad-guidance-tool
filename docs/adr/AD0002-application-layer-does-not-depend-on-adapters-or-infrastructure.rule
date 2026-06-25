@@ -1,0 +1,16 @@
+adr "0002" "Application layer does not depend on adapters or infrastructure"
+
+component "Application"    = "github.com/adr/ad-guidance-tool/internal/application.."
+component "Adapter"        = "github.com/adr/ad-guidance-tool/internal/adapter.."
+component "Infrastructure" = "github.com/adr/ad-guidance-tool/internal/infrastructure.."
+
+code "application_does_not_import_adapter" {
+  Application must not depend on Adapter
+  severity error
+}
+
+code "application_does_not_import_infrastructure" {
+  Application must not depend on Infrastructure
+  severity error
+}
+

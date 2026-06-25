@@ -1,10 +1,11 @@
 package decision
 
 import (
-	util "adg/internal/adapter/command"
-	"adg/internal/application/inputport"
-	domain "adg/internal/domain/config"
 	"fmt"
+
+	util "github.com/adr/ad-guidance-tool/internal/adapter/command"
+	"github.com/adr/ad-guidance-tool/internal/application/inputport"
+	domain "github.com/adr/ad-guidance-tool/internal/domain/config"
 
 	"github.com/spf13/cobra"
 )
@@ -13,13 +14,24 @@ func NewCommentCommand(input inputport.DecisionComment, config domain.ConfigServ
 	var modelPath, idOrTitle, id, title, text, authorFlag string
 
 	cmd := &cobra.Command{
-		Use:   "comment",
+		Use:   "comment [comment-text...]",
 		Short: "Add a comment to a decision",
 		Long: `Adds a comment to the specified decision.
-You must provide --id to identify the decision and a --text for the comment.`,
+
+You can provide the comment text either as positional arguments or via the --text flag.
+
+Examples:
+  adg comment --id 0001 This is my comment text
+  adg comment --id 0001 --text "This is my comment text"
+  adg comment --id my-decision Great decision about architecture`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// If no --text flag provided, use positional arguments
+			if text == "" && len(args) > 0 {
+				text = joinArgs(args)
+			}
+
 			if text == "" {
-				return fmt.Errorf("--text is required to provide the comment")
+				return fmt.Errorf("comment text must be provided (via arguments or --text flag)")
 			}
 
 			err := util.ResolveIdOrTitle(idOrTitle, &id, &title)
@@ -46,7 +58,7 @@ You must provide --id to identify the decision and a --text for the comment.`,
 
 	cmd.Flags().StringVar(&modelPath, "model", "", "Path to the model directory (optional if configured)")
 	cmd.Flags().StringVar(&idOrTitle, "id", "", "ID or title of the decision to comment on (e.g. 0001, 'my-decision')")
-	cmd.Flags().StringVar(&text, "text", "", "Text content of the comment (required)")
+	cmd.Flags().StringVar(&text, "text", "", "Text content of the comment (optional if using positional arguments)")
 	cmd.Flags().StringVar(&authorFlag, "author", "", "Name of the commenter (overrides config)")
 
 	return cmd
