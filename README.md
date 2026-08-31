@@ -377,7 +377,7 @@ ADG was developed as part of two theses at the [Eastern Switzerland University o
 - [Concept Alternatives for the Management of Architectural Decisions in Clean Architectures](https://eprints.ost.ch/id/eprint/1280/1/MSECS-FS24-CleanArchitectureDecisionsConceptsRS.pdf)
 - [A Command-Line Tool for Managing Recurring Architectural Decisions: Design, Implementation, and Empirical Evaluation](https://eprints.ost.ch/id/eprint/1287/1/PA2-Raphael-Schellander.pdf)
 
-A follow-up focusing on *Architectural Decision Enforcement* is in progress.
+A follow-up thesis focusing on *Architectural Decision Enforcement* was developed and published in [this repository](https://github.com/phi42/ad-enforcement-tool).
 
 ## License
 
