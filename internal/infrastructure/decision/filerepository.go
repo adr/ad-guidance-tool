@@ -303,8 +303,14 @@ func (r *FileDecisionRepository) AppendOutcomeSection(modelPath, decisionID, out
 }
 
 func (r *FileDecisionRepository) AppendCommentSection(modelPath, decisionID, commentText string, commentNumber int, author, date string) error {
+	body, err := r.LoadDecisionContentRaw(modelPath, decisionID)
+	if err != nil {
+		return err
+	}
+
 	commentLine := util.AnchorForComment(commentNumber, author, date, commentText)
-	return r.UpdateSection(modelPath, decisionID, util.AnchorSectionComments, []string{commentLine})
+	lines := append(extractSectionLines(body, util.AnchorSectionComments), commentLine)
+	return r.UpdateSection(modelPath, decisionID, util.AnchorSectionComments, lines)
 }
 
 func (r *FileDecisionRepository) OptionExists(modelPath, decisionID, option string) (bool, error) {
@@ -589,6 +595,28 @@ func extractSections(body string) map[string]string {
 	}
 
 	return sections
+}
+
+// extractSectionLines covers the same span UpdateSection replaces (anchor line up to the
+// next "## " header), so its result can be extended and written back without touching
+// other sections. Trailing blank lines are dropped because UpdateSection appends its own.
+func extractSectionLines(body, anchorName string) []string {
+	lines := strings.Split(body, "\n")
+	for i, line := range lines {
+		if !strings.Contains(line, fmt.Sprintf(`name="%s"`, anchorName)) {
+			continue
+		}
+
+		end := i + 1
+		for end < len(lines) && !strings.HasPrefix(lines[end], "## ") {
+			end++
+		}
+		for end > i+1 && strings.TrimSpace(lines[end-1]) == "" {
+			end--
+		}
+		return lines[i+1 : end]
+	}
+	return nil
 }
 
 func stripHeader(section string) string {
