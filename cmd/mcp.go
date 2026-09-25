@@ -52,10 +52,18 @@ Add to .vscode/mcp.json in your project:
 Or run "MCP: Add Server" in VS Code and select "Command (stdio)" to
 configure this interactively.
 
+To share one server between several clients, serve over Streamable HTTP
+instead of stdio:
+
+  adg mcp run --model %s --http 127.0.0.1:8080
+
+Clients then connect to the URL http://127.0.0.1:8080/mcp instead of
+starting a command.
+
 Other MCP-compatible AI tools use the same command and args but may require
 a different config file and structure.
 
-`, displayPath)
+`, displayPath, displayPath)
 			return nil
 		},
 	}
@@ -69,9 +77,8 @@ func newMCPRunCommand() *cobra.Command {
 	var httpAddr string
 
 	c := &cobra.Command{
-		Use:    "run",
-		Short:  "Start the ADG MCP server over stdio, or over Streamable HTTP with --http",
-		Hidden: true,
+		Use:   "run",
+		Short: "Start the ADG MCP server over stdio, or over Streamable HTTP with --http",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolvedPath, err := util.ResolveModelPathOrDefault(modelPath, configSvc)
 			if err != nil {
