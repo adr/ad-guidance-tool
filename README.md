@@ -297,6 +297,8 @@ See the [ADE repository](https://github.com/phi42/ad-enforcement-tool/tree/main/
 
 ADG includes an MCP (Model Context Protocol) server that lets AI assistants read your ADRs, access the DSL reference, and validate generated rule files. This enables workflows where the AI generates a `.rule` file from an ADR and immediately validates it before presenting the result.
 
+The server runs as `adg mcp run` and serves over stdio, so the AI tool starts its own `adg` process next to the model. That covers most setups; to share one server instead, `adg mcp run --model <model-name> --http 127.0.0.1:8080` serves over [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http) at `http://127.0.0.1:8080/mcp`.
+
 Run the following command to get a config snippet for your model:
 
 ```bash
