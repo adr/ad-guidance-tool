@@ -367,6 +367,13 @@ If you have a feature request or found a bug, you can [open an issue](https://gi
 
 Contributions are also welcome. Please submit a [pull request](https://github.com/adr/ad-guidance-tool/pulls) with your changes.
 
+Pull request titles must follow the [Conventional Commits](https://www.conventionalcommits.org/) format so releases can be generated automatically with [release-please](https://github.com/googleapis/release-please). Supported prefixes are: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, and `test`. A scope is optional.
+
+Examples:
+- `feat: add support for custom templates`
+- `fix(cli): handle invalid input`
+- `docs: update installation instructions`
+
 We follow [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) to organize our codebase. If you're adding a feature, we recommend to:
 1. Start with the use case (interactor) of your feature
 2. Add any necessary core logic in the domain layer
