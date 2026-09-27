@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 
 	util "github.com/adr/ad-guidance-tool/internal/adapter/command"
 	adgmcp "github.com/adr/ad-guidance-tool/internal/adapter/mcp"
@@ -51,10 +52,18 @@ Add to .vscode/mcp.json in your project:
 Or run "MCP: Add Server" in VS Code and select "Command (stdio)" to
 configure this interactively.
 
+To share one server between several clients, serve over Streamable HTTP
+instead of stdio:
+
+  adg mcp run --model %s --http 127.0.0.1:8080
+
+Clients then connect to the URL http://127.0.0.1:8080/mcp instead of
+starting a command.
+
 Other MCP-compatible AI tools use the same command and args but may require
 a different config file and structure.
 
-`, displayPath)
+`, displayPath, displayPath)
 			return nil
 		},
 	}
@@ -65,20 +74,31 @@ a different config file and structure.
 
 func newMCPRunCommand() *cobra.Command {
 	var modelPath string
+	var httpAddr string
 
 	c := &cobra.Command{
-		Use:    "run",
-		Short:  "Start the ADG MCP server over stdio",
-		Hidden: true,
+		Use:   "run",
+		Short: "Start the ADG MCP server over stdio, or over Streamable HTTP with --http",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolvedPath, err := util.ResolveModelPathOrDefault(modelPath, configSvc)
 			if err != nil {
 				return err
 			}
-			return adgmcp.Serve(resolvedPath, decisionSvc)
+			if httpAddr == "" {
+				return adgmcp.Serve(resolvedPath, decisionSvc)
+			}
+
+			ln, err := net.Listen("tcp", httpAddr)
+			if err != nil {
+				return fmt.Errorf("failed to listen on %s: %w", httpAddr, err)
+			}
+			// The bound address, not --http: port 0 or a hostname resolve only here.
+			cmd.PrintErrf("ADG MCP server listening on http://%s%s (model: %s)\n", ln.Addr(), adgmcp.EndpointPath, resolvedPath)
+			return adgmcp.ServeStreamableHTTP(ln, resolvedPath, decisionSvc)
 		},
 	}
 
 	c.Flags().StringVar(&modelPath, "model", "", "Path to the decision model (optional if configured)")
+	c.Flags().StringVar(&httpAddr, "http", "", "Serve over Streamable HTTP at this address (e.g. 127.0.0.1:8080) instead of stdio; the MCP endpoint is /mcp")
 	return c
 }
