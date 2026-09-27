@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"log"
+	"runtime/debug"
+	"strings"
 
 	decisiondomain "github.com/adr/ad-guidance-tool/internal/domain/decision"
 	modeldomain "github.com/adr/ad-guidance-tool/internal/domain/model"
@@ -12,8 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version is set at build time via -ldflags.
-var Version = "1.0.3-dev"
+// Version is overridden via -ldflags or derived from Go build info.
+var Version = "dev"
 
 var rootCmd = &cobra.Command{
 	Use:   "adg",
@@ -29,6 +31,18 @@ var decisionRepo = decisioninfra.NewFileDecisionRepository(configSvc)
 var modelRepo = modelinfra.NewFileModelRepository()
 var modelSvc = modeldomain.NewModelService(modelRepo, decisionRepo)
 var decisionSvc = decisiondomain.NewDecisionService(decisionRepo)
+
+func init() {
+	if Version != "dev" {
+		return
+	}
+
+	if info, ok := debug.ReadBuildInfo(); ok {
+		if v := info.Main.Version; v != "" && v != "(devel)" {
+			Version = strings.TrimPrefix(v, "v")
+		}
+	}
+}
 
 func Execute() error {
 	if err != nil {
